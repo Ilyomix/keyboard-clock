@@ -1,0 +1,236 @@
+{
+  "title": "Keyboard Clock: relógio no seu teclado RGB (grátis, Windows)",
+  "description": "App grátis para Windows que mostra a hora em dígitos grandes no teclado RGB quando você sai do PC. Logitech, Razer, Corsair e mais. Timer, Pomodoro, alarmes.",
+  "og_title": "Keyboard Clock: a hora em dígitos grandes no seu teclado RGB",
+  "og_description": "Saia de perto do PC e o seu teclado vira um relógio que dá para ler do outro lado do quarto. Grátis e de código aberto, para Windows.",
+  "preview_title": "A hora em dígitos grandes\nno seu teclado RGB",
+  "preview_sub": "Keyboard Clock · grátis para Windows · Logitech G, Razer, Corsair e mais",
+  "preview_alt": "Um teclado escuro com as horas acesas em laranja nas teclas de função, na fileira de números e nas letras, e os segundos preenchendo o bloco acima das setas",
+  "skip": "Pular para o conteúdo",
+  "nav_label": "Seções",
+  "nav_how": "Como funciona",
+  "nav_features": "Recursos",
+  "nav_app": "O app",
+  "nav_compat": "Teclados",
+  "nav_faq": "Dúvidas",
+  "lang_label": "Idioma",
+  "eyebrow": "Grátis e de código aberto · Windows 10 e 11",
+  "h1": "A hora em dígitos grandes no seu <span class=\"o\">teclado</span> <span class=\"c\">RGB</span>",
+  "lead": "Quando você sai de perto do PC, o Keyboard Clock acende as horas e depois os minutos nas suas teclas, com os segundos correndo ao lado. Dá para ler da cama ou do sofá. Toque em qualquer coisa e a sua iluminação de sempre volta.",
+  "cta_download": "Baixar para Windows",
+  "cta_source": "Código-fonte no GitHub",
+  "cta_note": "Grátis · Sem cadastro · Versão {{version}} · Logitech G HUB, Iluminação dinâmica do Windows, OpenRGB",
+  "cta_star": "Dê uma estrela no GitHub",
+  "demo_label": "Demonstração ao vivo: o seu teclado mostrando a hora atual, primeiro as horas e depois os minutos",
+  "demo_caption": "Demonstração ao vivo: esta é a hora de agora, do jeito que o seu teclado mostra.",
+  "demo_themes_label": "Temas",
+  "demo_themes": {
+    "neon": "Neon",
+    "sunset": "Pôr do sol",
+    "matrix": "Matrix",
+    "rainbow": "Arco-íris"
+  },
+  "works_label": "Funciona com",
+  "works": [
+    "Logitech G HUB",
+    "Iluminação dinâmica do Windows",
+    "OpenRGB",
+    "Razer · Corsair · ASUS · SteelSeries · HyperX",
+    "AZERTY · QWERTY · QWERTZ",
+    "TKL e tamanho completo"
+  ],
+  "how_h2": "O seu teclado vira um relógio",
+  "how_p": "Cada dígito é desenhado à mão sobre teclas de verdade: as horas na metade esquerda, os minutos na metade direita e os segundos preenchendo as nove teclas acima das setas.",
+  "steps": [
+    {
+      "t": "Instale",
+      "p": "Um instalador pequeno, sem cadastro e sem privilégios de administrador. Ele fica esperando ao lado do relógio, na barra de tarefas."
+    },
+    {
+      "t": "Saia de perto",
+      "p": "Depois de um minuto sem mexer no mouse nem no teclado (você escolhe o tempo), ou assim que você bloqueia o PC com Win+L."
+    },
+    {
+      "t": "Veja a hora do outro lado do quarto",
+      "p": "As horas e depois os minutos, em dígitos grandes nas teclas. Toque em qualquer coisa e a sua iluminação de sempre volta na hora."
+    }
+  ],
+  "feat_h2": "Tudo o que um relógio de teclado precisa fazer",
+  "feat_p": "Feito para ser lido num relance e ajustado ao seu setup.",
+  "features": [
+    {
+      "i": "digits",
+      "t": "Dígitos grandes e legíveis",
+      "p": "Dois dígitos por vez, desenhados tecla por tecla sobre as teclas de função, a fileira de números e as letras. Os segundos preenchem o bloco acima das setas."
+    },
+    {
+      "i": "lock",
+      "t": "Aparece quando você sai",
+      "p": "Depois do tempo que você escolher, assim que você bloqueia o PC, o tempo todo ou com um atalho de teclado. Fica oculto durante jogos em tela cheia e nos apps que você escolher."
+    },
+    {
+      "i": "palette",
+      "t": "Temas e cores",
+      "p": "Neon, Pôr do sol, Oceano, Matrix, Arco-íris, cores que acompanham a hora do dia, ou as suas próprias cores, degradês e um brilho suave no fundo."
+    },
+    {
+      "i": "timer",
+      "t": "Timer e Pomodoro",
+      "p": "Inicie um timer pela barra de tarefas: o teclado mostra os minutos que faltam e pisca quando o tempo acaba. Os ciclos Pomodoro têm cores próprias para o trabalho e as pausas."
+    },
+    {
+      "i": "bell",
+      "t": "Alarmes e lembretes",
+      "p": "Escolha um horário e os dias da semana, e o teclado inteiro pisca. Aperte qualquer tecla para parar."
+    },
+    {
+      "i": "music",
+      "t": "Acende com a sua música",
+      "p": "As teclas em volta dos dígitos podem pulsar no ritmo ou mostrar um espectro do que está tocando no seu PC."
+    },
+    {
+      "i": "font",
+      "t": "Desenhe os seus próprios dígitos",
+      "p": "Um editor integrado: clique nas teclas para redesenhar qualquer dígito, do lado esquerdo e do lado direito, com prévia ao vivo."
+    },
+    {
+      "i": "moon",
+      "t": "Modo noturno e badalada de hora em hora",
+      "p": "À noite, diminua o brilho das teclas, deixe-as em vermelho ou apague-as. Na hora cheia, uma onda de luz atravessa o teclado."
+    },
+    {
+      "i": "globe",
+      "t": "No seu idioma",
+      "p": "Inglês, francês, espanhol, alemão, italiano e português, com formato de 12 ou 24 horas e, se quiser, a data entre uma hora e outra."
+    }
+  ],
+  "app_h2": "Um app de verdade, não um script",
+  "app_p": "Tudo se ajusta em uma única janela, com uma prévia ao vivo do seu teclado. Um pequeno painel na barra de tarefas permite pausar, mostrar o relógio ou iniciar um timer.",
+  "shots": [
+    {
+      "page": "clock",
+      "tab": "Relógio",
+      "caption": "O que o teclado mostra: a hora, a data entre uma hora e outra, os segundos, 12 ou 24 horas.",
+      "alt": "Janela do Keyboard Clock, página Relógio: modo de exibição, estilo dos segundos e prévia ao vivo do teclado"
+    },
+    {
+      "page": "look",
+      "tab": "Aparência",
+      "caption": "Temas, cores, degradês, fundo e brilho, com prévia enquanto você ajusta.",
+      "alt": "Janela do Keyboard Clock, página Aparência: temas, cores e fundo com prévia ao vivo do teclado"
+    },
+    {
+      "page": "timer",
+      "tab": "Timer e alarmes",
+      "caption": "Timer, Pomodoro e alarmes nos dias que você escolher.",
+      "alt": "Janela do Keyboard Clock, página Timer: configurações de timer, Pomodoro e alarmes"
+    },
+    {
+      "page": "font",
+      "tab": "Editor de fonte",
+      "caption": "Redesenhe qualquer dígito tecla por tecla. A outra metade do teclado fica esmaecida, como guia.",
+      "alt": "Editor de fonte do Keyboard Clock: o dígito 8 desenhado na metade direita do teclado"
+    }
+  ],
+  "install_h2": "Instale em um minuto",
+  "install_p": "Windows 10 ou 11, 64 bits. O Keyboard Clock conversa com o seu teclado pelo software de iluminação que você já tem.",
+  "install_steps": [
+    {
+      "t": "Baixe",
+      "p": "<a href=\"{SETUP}\">KeyboardClockSetup.exe</a>, da versão mais recente no GitHub."
+    },
+    {
+      "t": "Execute",
+      "p": "Não precisa de privilégios de administrador. Se o Windows SmartScreen exibir um aviso, clique em <b>Mais informações</b> e depois em <b>Executar assim mesmo</b>: o app é novo, então a Microsoft ainda não o conhece."
+    },
+    {
+      "t": "Mantenha o seu software de iluminação",
+      "p": "O Keyboard Clock controla as teclas pelo G HUB, pela Iluminação dinâmica do Windows ou pelo OpenRGB. No G HUB, ative <b>“Allow games &amp; applications to control my lighting”</b>. O Keyboard Clock inicia com o Windows, mas você pode desativar isso."
+    }
+  ],
+  "install_more": [
+    {
+      "t": "Portátil",
+      "p": "Um só arquivo, nada é instalado: baixe o <a href=\"{REPO}/releases/latest/download/KeyboardClockPortable.exe\">KeyboardClockPortable.exe</a> e execute."
+    },
+    {
+      "t": "Linha de comando",
+      "p": "<a href=\"{REPO}/releases/latest/download/keyboard-clock.exe\">keyboard-clock.exe</a> para scripts: demonstração, prévia, configurações.",
+      "code": "keyboard-clock --demo"
+    },
+    {
+      "t": "Python",
+      "p": "Python 3.9 ou mais recente, sem dependências.",
+      "code": "pip install git+{REPO}"
+    }
+  ],
+  "install_fine": "Cada versão é compilada pelo GitHub Actions a partir do código-fonte público, testada e publicada com somas de verificação SHA-256. As atualizações são instaladas pelo próprio app, com um clique.",
+  "compat_h2": "Quais teclados funcionam?",
+  "compat_p": "Qualquer teclado com iluminação RGB por tecla que um destes consiga controlar. O layout não importa: as teclas são encontradas pela posição.",
+  "compat_yes_t": "Funciona",
+  "compat_yes": [
+    "Teclados <b>Logitech G</b> com RGB por tecla, pelo <b>G HUB</b> (testado em um G PRO TKL).",
+    "<b>Razer, Corsair, ASUS, SteelSeries, HyperX</b> e outros compatíveis com a <b>Iluminação dinâmica do Windows</b> (beta).",
+    "Teclados compatíveis com o <b>OpenRGB</b>, com o servidor SDK dele ligado (beta).",
+    "<b>TKL e tamanho completo</b>, ISO e ANSI, AZERTY, QWERTY, QWERTZ e outros layouts."
+  ],
+  "compat_no_t": "Não funciona (ainda)",
+  "compat_no": [
+    "Teclados com iluminação só por zonas ou por fileiras: os dígitos precisam de uma luz por tecla.",
+    "Teclados 60% e 65%, que não têm a fileira de teclas de função para desenhar.",
+    "macOS e Linux.",
+    "Logitech Gaming Software (LGS), o app antigo, anterior ao G HUB: não testado."
+  ],
+  "faq_h2": "Perguntas frequentes",
+  "faq": [
+    {
+      "q": "Como mostrar a hora no meu teclado RGB?",
+      "a": "Instale o Keyboard Clock e deixe o PC parado por um minuto: a hora aparece no teclado em dígitos grandes, primeiro as horas e depois os minutos. Ela também pode aparecer assim que você bloquear o PC, o tempo todo ou com um atalho de teclado."
+    },
+    {
+      "q": "Quais teclados são compatíveis?",
+      "a": "Teclados Logitech G com RGB por tecla, pelo G HUB; teclados que funcionam com a Iluminação dinâmica do Windows (muitos modelos Razer, Corsair, ASUS, SteelSeries e HyperX); e teclados compatíveis com o OpenRGB. Teclados TKL e de tamanho completo, em qualquer layout."
+    },
+    {
+      "q": "Nada aparece no meu teclado Logitech. O que devo verificar?",
+      "a": "Abra o G HUB, vá em Configurações, ative “Allow games &amp; applications to control my lighting” e deixe o G HUB aberto. Depois, na janela do Keyboard Clock, clique em Mostrar no teclado para testar."
+    },
+    {
+      "q": "Funciona com Razer Synapse, Corsair iCUE ou SteelSeries GG?",
+      "a": "Funciona pelo Windows, e não por esses programas: para essas marcas, o Keyboard Clock usa a Iluminação dinâmica do Windows ou o OpenRGB. No Windows 11, abra Configurações > Personalização > Iluminação dinâmica: se o seu teclado estiver na lista, ele pode mostrar o relógio. Desative a Iluminação dinâmica para esse teclado, para que o Windows e o Keyboard Clock não controlem as teclas ao mesmo tempo."
+    },
+    {
+      "q": "Ele deixa os meus jogos mais lentos?",
+      "a": "Não. Ele fica oculto enquanto um jogo ou um vídeo está em tela cheia, e desenhar o relógio leva uma fração de milissegundo. Quando não está aparecendo, ele só fica esperando."
+    },
+    {
+      "q": "Ele muda a iluminação do meu teclado para sempre?",
+      "a": "Não. Assim que você toca no mouse ou no teclado, a sua iluminação de sempre volta. O G HUB, a Iluminação dinâmica e o OpenRGB mantêm todas as configurações deles."
+    },
+    {
+      "q": "Por que o Windows SmartScreen exibe um aviso sobre o instalador?",
+      "a": "O SmartScreen avisa sobre programas que ele ainda não viu muitas vezes, e o Keyboard Clock é novo. Clique em Mais informações e depois em Executar assim mesmo. O código é aberto, e cada versão é compilada pelo GitHub a partir desse código e publicada com somas de verificação SHA-256."
+    },
+    {
+      "q": "Dá para mostrar um timer ou um Pomodoro no teclado?",
+      "a": "Sim. Inicie um timer ou um Pomodoro pelo ícone na barra de tarefas: o teclado mostra os minutos que faltam e pisca quando o tempo acaba. Também há alarmes, nos dias da semana que você escolher."
+    },
+    {
+      "q": "Posso mudar os dígitos ou as cores?",
+      "a": "Sim. Escolha um tema ou as suas próprias cores, degradês e fundo. O editor de fonte permite redesenhar qualquer dígito clicando nas teclas."
+    },
+    {
+      "q": "É grátis? Ele coleta dados?",
+      "a": "É gratuito e de código aberto (licença MIT), sem cadastro, sem anúncios e sem telemetria. Ele só se conecta à internet para procurar uma nova versão no GitHub uma vez por dia, e você pode desativar isso."
+    }
+  ],
+  "final_h2": "Transforme o seu teclado em um relógio que dá para ler da cama",
+  "final_p": "Grátis, de código aberto e com um download pequeno.",
+  "foot_source": "Código-fonte",
+  "foot_releases": "Todas as versões",
+  "foot_privacy": "Privacidade",
+  "foot_issues": "Relatar um problema",
+  "foot_license": "Licença MIT",
+  "foot_also": "Também do Ilyomix: <a href=\"https://ilyomix.github.io/glowback/\">Glowback</a>, luz ambiente para os LEDs RGB atrás do seu monitor, sincronizada com a tela.",
+  "foot_tm": "Logitech, Logitech G e G HUB são marcas comerciais da Logitech. Razer, Corsair, ASUS, SteelSeries, HyperX e Windows são marcas comerciais de seus respectivos proprietários. O Keyboard Clock é um projeto independente, não afiliado a nenhuma delas nem endossado por elas."
+}

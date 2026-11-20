@@ -1,0 +1,236 @@
+{
+  "title": "Keyboard Clock : l'horloge gratuite pour clavier RGB sous Windows",
+  "description": "Logiciel Windows gratuit qui affiche l'heure en grand sur votre clavier RGB pendant votre absence. Logitech G HUB, Razer, Corsair… Minuteur, Pomodoro, alarmes.",
+  "og_title": "Keyboard Clock : l'heure en gros chiffres sur votre clavier RGB",
+  "og_description": "Éloignez-vous de votre PC : votre clavier devient une horloge lisible depuis l'autre bout de la pièce. Gratuit et open source, pour Windows.",
+  "preview_title": "L'heure, en gros chiffres,\nsur votre clavier RGB",
+  "preview_sub": "Keyboard Clock · gratuit pour Windows · Logitech G, Razer, Corsair et d'autres",
+  "preview_alt": "Un clavier sombre avec les heures allumées en orange sur les touches F, la rangée des chiffres et les lettres, et les secondes qui remplissent le bloc au-dessus des flèches",
+  "skip": "Aller au contenu",
+  "nav_label": "Sections",
+  "nav_how": "Fonctionnement",
+  "nav_features": "Fonctionnalités",
+  "nav_app": "L'application",
+  "nav_compat": "Claviers",
+  "nav_faq": "FAQ",
+  "lang_label": "Langue",
+  "eyebrow": "Gratuit et open source · Windows 10 et 11",
+  "h1": "L'heure, en gros chiffres, sur votre <span class=\"o\">clavier</span> <span class=\"c\">RGB</span>",
+  "lead": "Éloignez-vous de votre PC : Keyboard Clock allume les heures, puis les minutes, sur vos touches, tandis que les secondes défilent sur le côté. Vous la lisez depuis votre lit ou le canapé. Touchez le clavier ou la souris, et votre éclairage habituel revient.",
+  "cta_download": "Télécharger pour Windows",
+  "cta_source": "Code source sur GitHub",
+  "cta_note": "Gratuit · Sans compte · Version {{version}} · Logitech G HUB, Éclairage dynamique Windows, OpenRGB",
+  "cta_star": "Mettre une étoile sur GitHub",
+  "demo_label": "Démo en direct : votre clavier affiche l'heure actuelle, les heures puis les minutes",
+  "demo_caption": "Démo en direct : voici l'heure qu'il est, telle que votre clavier l'affiche.",
+  "demo_themes_label": "Thèmes",
+  "demo_themes": {
+    "neon": "Néon",
+    "sunset": "Coucher de soleil",
+    "matrix": "Matrix",
+    "rainbow": "Arc-en-ciel"
+  },
+  "works_label": "Compatible avec",
+  "works": [
+    "Logitech G HUB",
+    "Éclairage dynamique Windows",
+    "OpenRGB",
+    "Razer · Corsair · ASUS · SteelSeries · HyperX",
+    "AZERTY · QWERTY · QWERTZ",
+    "TKL et format complet"
+  ],
+  "how_h2": "Votre clavier devient une horloge",
+  "how_p": "Chaque chiffre est dessiné à la main sur de vraies touches : les heures sur la moitié gauche, les minutes sur la moitié droite, et les secondes dans les neuf touches au-dessus des flèches.",
+  "steps": [
+    {
+      "t": "Installez-le",
+      "p": "Un petit installateur, sans compte ni droits d'administrateur. Keyboard Clock attend ensuite près de l'horloge, dans la barre des tâches."
+    },
+    {
+      "t": "Éloignez-vous",
+      "p": "Après une minute sans toucher la souris ni le clavier (vous choisissez le délai), ou dès que vous verrouillez votre PC avec Win+L."
+    },
+    {
+      "t": "Lisez l'heure depuis l'autre bout de la pièce",
+      "p": "Les heures, puis les minutes, en gros chiffres sur les touches. Touchez le clavier ou la souris, et votre éclairage habituel revient aussitôt."
+    }
+  ],
+  "feat_h2": "Tout ce qu'une horloge sur clavier doit savoir faire",
+  "feat_p": "Lisible d'un coup d'œil, et réglable selon votre configuration.",
+  "features": [
+    {
+      "i": "digits",
+      "t": "De gros chiffres bien lisibles",
+      "p": "Deux chiffres à la fois, dessinés touche par touche sur les touches F, la rangée des chiffres et les lettres. Les secondes remplissent le bloc au-dessus des flèches."
+    },
+    {
+      "i": "lock",
+      "t": "S'affiche quand vous partez",
+      "p": "Après le délai de votre choix, dès que vous verrouillez le PC, en permanence ou avec un raccourci clavier. Masquée pendant les jeux en plein écran et dans les applications de votre choix."
+    },
+    {
+      "i": "palette",
+      "t": "Thèmes et couleurs",
+      "p": "Néon, Coucher de soleil, Océan, Matrix, Arc-en-ciel, des couleurs qui suivent le moment de la journée, ou vos propres couleurs, des dégradés et une douce lueur en fond."
+    },
+    {
+      "i": "timer",
+      "t": "Minuteur et Pomodoro",
+      "p": "Lancez un minuteur depuis la barre des tâches : le clavier affiche les minutes restantes, puis clignote quand le temps est écoulé. Les cycles Pomodoro ont leurs propres couleurs pour le travail et les pauses."
+    },
+    {
+      "i": "bell",
+      "t": "Alarmes et rappels",
+      "p": "Choisissez une heure et des jours de la semaine, et tout le clavier clignote. Appuyez sur n'importe quelle touche pour l'arrêter."
+    },
+    {
+      "i": "music",
+      "t": "S'anime avec votre musique",
+      "p": "Les touches autour des chiffres peuvent pulser au rythme de la musique ou afficher le spectre de ce que joue votre PC."
+    },
+    {
+      "i": "font",
+      "t": "Dessinez vos propres chiffres",
+      "p": "Un éditeur intégré : cliquez sur les touches pour redessiner n'importe quel chiffre, côté gauche et côté droit, avec un aperçu en direct."
+    },
+    {
+      "i": "moon",
+      "t": "Mode nuit et carillon horaire",
+      "p": "La nuit, tamisez les touches, passez-les en rouge ou éteignez-les. À chaque heure pile, une vague de lumière balaie le clavier."
+    },
+    {
+      "i": "globe",
+      "t": "Dans votre langue",
+      "p": "Anglais, français, espagnol, allemand, italien et portugais, au format 12 ou 24 heures, avec la date en alternance si vous le souhaitez."
+    }
+  ],
+  "app_h2": "Une vraie application, pas un script",
+  "app_p": "Tout se règle dans une seule fenêtre, avec un aperçu en direct de votre clavier. Un petit panneau dans la barre des tâches permet de mettre en pause, d'afficher l'horloge ou de lancer un minuteur.",
+  "shots": [
+    {
+      "page": "clock",
+      "tab": "Horloge",
+      "caption": "Ce qu'affiche le clavier : l'heure, la date en alternance, les secondes, au format 12 ou 24 heures.",
+      "alt": "Fenêtre de Keyboard Clock, page Horloge : mode d'affichage, style des secondes et aperçu en direct du clavier"
+    },
+    {
+      "page": "look",
+      "tab": "Apparence",
+      "caption": "Thèmes, couleurs, dégradés, fond et luminosité, avec un aperçu à chaque changement.",
+      "alt": "Fenêtre de Keyboard Clock, page Apparence : thèmes, couleurs et fond avec un aperçu du clavier en direct"
+    },
+    {
+      "page": "timer",
+      "tab": "Minuteur et alarmes",
+      "caption": "Minuteur, Pomodoro et alarmes, les jours de votre choix.",
+      "alt": "Fenêtre de Keyboard Clock, page Minuteur : réglages du minuteur, du Pomodoro et des alarmes"
+    },
+    {
+      "page": "font",
+      "tab": "Éditeur de police",
+      "caption": "Redessinez n'importe quel chiffre touche par touche. L'autre moitié du clavier reste atténuée pour vous guider.",
+      "alt": "Éditeur de police de Keyboard Clock : le chiffre 8 dessiné sur la moitié droite du clavier"
+    }
+  ],
+  "install_h2": "Installé en une minute",
+  "install_p": "Windows 10 ou 11, 64 bits. Keyboard Clock pilote votre clavier via le logiciel d'éclairage que vous avez déjà.",
+  "install_steps": [
+    {
+      "t": "Téléchargez",
+      "p": "<a href=\"{SETUP}\">KeyboardClockSetup.exe</a>, depuis la dernière version publiée sur GitHub."
+    },
+    {
+      "t": "Lancez-le",
+      "p": "Aucun droit d'administrateur requis. Si Windows SmartScreen affiche un avertissement, cliquez sur <b>Informations complémentaires</b>, puis sur <b>Exécuter quand même</b> : le logiciel est récent, Microsoft ne le connaît pas encore."
+    },
+    {
+      "t": "Gardez votre logiciel d'éclairage",
+      "p": "Keyboard Clock pilote les touches via G HUB, l'Éclairage dynamique de Windows ou OpenRGB. Dans G HUB, activez <b>Autoriser les jeux et les applications à contrôler mon éclairage</b>. Keyboard Clock démarre avec Windows ; vous pouvez le désactiver."
+    }
+  ],
+  "install_more": [
+    {
+      "t": "Portable",
+      "p": "Un seul fichier, rien à installer : téléchargez <a href=\"{REPO}/releases/latest/download/KeyboardClockPortable.exe\">KeyboardClockPortable.exe</a> et lancez-le."
+    },
+    {
+      "t": "Ligne de commande",
+      "p": "<a href=\"{REPO}/releases/latest/download/keyboard-clock.exe\">keyboard-clock.exe</a> pour les scripts : démo, aperçu, réglages.",
+      "code": "keyboard-clock --demo"
+    },
+    {
+      "t": "Python",
+      "p": "Python 3.9 ou plus récent, sans dépendances.",
+      "code": "pip install git+{REPO}"
+    }
+  ],
+  "install_fine": "Chaque version est compilée par GitHub Actions à partir du code source public, testée, puis publiée avec ses sommes de contrôle SHA-256. Les mises à jour s'installent depuis le logiciel, en un clic.",
+  "compat_h2": "Quels claviers sont compatibles ?",
+  "compat_p": "Tout clavier à éclairage RGB par touche que l'un de ces logiciels sait piloter. La disposition n'a pas d'importance : les touches sont repérées par leur position.",
+  "compat_yes_t": "Compatibles",
+  "compat_yes": [
+    "Claviers <b>Logitech G</b> à éclairage RGB par touche, via <b>G HUB</b> (testé sur un G PRO TKL).",
+    "<b>Razer, Corsair, ASUS, SteelSeries, HyperX</b> et d'autres marques compatibles avec l'<b>Éclairage dynamique de Windows</b> (bêta).",
+    "Claviers pris en charge par <b>OpenRGB</b>, avec son serveur SDK activé (bêta).",
+    "<b>TKL et format complet</b>, ISO et ANSI, AZERTY, QWERTY, QWERTZ et autres dispositions."
+  ],
+  "compat_no_t": "Pas (encore) compatibles",
+  "compat_no": [
+    "Claviers éclairés uniquement par zones ou par rangées : les chiffres demandent une LED par touche.",
+    "Claviers 60 % et 65 %, qui n'ont pas de rangée de touches F où dessiner.",
+    "macOS et Linux.",
+    "Logitech Gaming Software (LGS), l'ancien logiciel d'avant G HUB : non testé."
+  ],
+  "faq_h2": "Questions fréquentes",
+  "faq": [
+    {
+      "q": "Comment afficher l'heure sur mon clavier RGB ?",
+      "a": "Installez Keyboard Clock et laissez votre PC tranquille une minute : l'heure apparaît sur votre clavier en gros chiffres, les heures puis les minutes. Vous pouvez aussi l'afficher dès que vous verrouillez le PC, en permanence ou avec un raccourci clavier."
+    },
+    {
+      "q": "Quels claviers sont pris en charge ?",
+      "a": "Les claviers Logitech G à éclairage RGB par touche via G HUB, les claviers compatibles avec l'Éclairage dynamique de Windows (de nombreux modèles Razer, Corsair, ASUS, SteelSeries et HyperX) et les claviers pris en charge par OpenRGB. Claviers TKL et format complet, quelle que soit la disposition."
+    },
+    {
+      "q": "Rien ne s'affiche sur mon clavier Logitech. Que vérifier ?",
+      "a": "Ouvrez G HUB, allez dans les Paramètres, activez « Autoriser les jeux et les applications à contrôler mon éclairage » et laissez G HUB ouvert. Cliquez ensuite sur « Afficher sur le clavier » dans la fenêtre de Keyboard Clock pour tester."
+    },
+    {
+      "q": "Est-ce compatible avec Razer Synapse, Corsair iCUE ou SteelSeries GG ?",
+      "a": "Pas directement : pour ces marques, Keyboard Clock passe par l'Éclairage dynamique de Windows ou par OpenRGB. Sous Windows 11, ouvrez Paramètres > Personnalisation > Éclairage dynamique : si votre clavier y figure, il peut afficher l'horloge. Désactivez l'Éclairage dynamique pour ce clavier, pour que Windows et Keyboard Clock ne pilotent pas les touches en même temps."
+    },
+    {
+      "q": "Est-ce que ça ralentit mes jeux ?",
+      "a": "Non. L'horloge reste masquée quand un jeu ou une vidéo est en plein écran, et la dessiner prend une fraction de milliseconde. Quand elle n'est pas affichée, elle se contente d'attendre."
+    },
+    {
+      "q": "Est-ce que ça modifie définitivement l'éclairage de mon clavier ?",
+      "a": "Non. Dès que vous touchez la souris ou le clavier, votre éclairage habituel revient. G HUB, l'Éclairage dynamique et OpenRGB gardent tous leurs propres réglages."
+    },
+    {
+      "q": "Pourquoi Windows SmartScreen affiche-t-il un avertissement pour l'installateur ?",
+      "a": "SmartScreen met en garde contre les programmes qu'il n'a pas encore vus souvent, et Keyboard Clock est récent. Cliquez sur « Informations complémentaires », puis sur « Exécuter quand même ». Le code est open source, et chaque version est compilée par GitHub à partir de ce code, puis publiée avec ses sommes de contrôle SHA-256."
+    },
+    {
+      "q": "Puis-je afficher un minuteur ou un Pomodoro sur le clavier ?",
+      "a": "Oui. Lancez un minuteur ou un Pomodoro depuis l'icône de la barre des tâches : le clavier affiche les minutes restantes, puis clignote quand le temps est écoulé. Les alarmes fonctionnent aussi, les jours de la semaine de votre choix."
+    },
+    {
+      "q": "Puis-je changer les chiffres ou les couleurs ?",
+      "a": "Oui. Choisissez un thème ou vos propres couleurs, dégradés et fond. L'éditeur de police vous permet de redessiner n'importe quel chiffre en cliquant sur les touches."
+    },
+    {
+      "q": "Est-ce gratuit ? Collecte-t-il des données ?",
+      "a": "Il est gratuit et open source (licence MIT), sans compte, sans publicité et sans télémétrie. Il ne se connecte à Internet que pour vérifier une fois par jour sur GitHub si une nouvelle version existe, ce que vous pouvez désactiver."
+    }
+  ],
+  "final_h2": "Transformez votre clavier en horloge lisible depuis votre lit",
+  "final_p": "Gratuit, open source et léger à télécharger.",
+  "foot_source": "Code source",
+  "foot_releases": "Toutes les versions",
+  "foot_privacy": "Confidentialité",
+  "foot_issues": "Signaler un problème",
+  "foot_license": "Licence MIT",
+  "foot_also": "Également signé Ilyomix : <a href=\"https://ilyomix.github.io/glowback/\">Glowback</a>, un éclairage d'ambiance pour les LED RGB placées derrière votre écran, synchronisé avec ce qu'il affiche.",
+  "foot_tm": "Logitech, Logitech G et G HUB sont des marques de Logitech. Razer, Corsair, ASUS, SteelSeries, HyperX et Windows sont des marques de leurs propriétaires respectifs. Keyboard Clock est un projet indépendant, qui n'est ni affilié à ces sociétés ni approuvé par elles."
+}

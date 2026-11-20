@@ -13,7 +13,7 @@ GitHub sees your IP address with its requests, as with any website: see the [Git
 
 ## Your keyboard
 
-Keyboard Clock talks to your keyboard's lighting through the LED SDK of Logitech G HUB, on your PC. It sends key colors only.
+Keyboard Clock talks to your keyboard's lighting on your PC only: through the LED SDK of Logitech G HUB, straight to the keyboard over HID LampArray (Windows Dynamic Lighting), or through the OpenRGB SDK server on your own computer (`127.0.0.1`). It sends key colors only.
 
 ## Keyboard and mouse activity
 

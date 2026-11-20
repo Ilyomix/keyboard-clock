@@ -1,0 +1,236 @@
+{
+  "title": "Keyboard Clock: show the time on your RGB keyboard (free, Windows)",
+  "description": "Free Windows app that draws the time in big digits on your RGB keyboard while you are away. Logitech G HUB, Razer, Corsair and more. Timer, Pomodoro, alarms.",
+  "og_title": "Keyboard Clock: the time in big digits on your RGB keyboard",
+  "og_description": "Step away from your PC and your keyboard becomes a clock you can read from across the room. Free and open source, for Windows.",
+  "preview_title": "The time, in big digits,\non your RGB keyboard",
+  "preview_sub": "Keyboard Clock · free for Windows · Logitech G, Razer, Corsair and more",
+  "preview_alt": "A dark keyboard with the hours lit in orange on the F-keys, number row and letters, and the seconds filling the block above the arrows",
+  "skip": "Skip to content",
+  "nav_label": "Sections",
+  "nav_how": "How it works",
+  "nav_features": "Features",
+  "nav_app": "The app",
+  "nav_compat": "Keyboards",
+  "nav_faq": "FAQ",
+  "lang_label": "Language",
+  "eyebrow": "Free and open source · Windows 10 and 11",
+  "h1": "The time, in big digits, on your <span class=\"o\">RGB</span> <span class=\"c\">keyboard</span>",
+  "lead": "Step away from your PC and Keyboard Clock lights the hours, then the minutes, across your keys, with the seconds ticking by on the side. Read it from your bed or the couch. Touch anything and your usual lighting comes back.",
+  "cta_download": "Download for Windows",
+  "cta_source": "Source code on GitHub",
+  "cta_note": "Free · No account · Version {{version}} · Logitech G HUB, Windows Dynamic Lighting, OpenRGB",
+  "cta_star": "Star it on GitHub",
+  "demo_label": "Live demo: your keyboard showing the current time, hours then minutes",
+  "demo_caption": "Live demo: this is your current time, the way your keyboard shows it.",
+  "demo_themes_label": "Themes",
+  "demo_themes": {
+    "neon": "Neon",
+    "sunset": "Sunset",
+    "matrix": "Matrix",
+    "rainbow": "Rainbow"
+  },
+  "works_label": "Works with",
+  "works": [
+    "Logitech G HUB",
+    "Windows Dynamic Lighting",
+    "OpenRGB",
+    "Razer · Corsair · ASUS · SteelSeries · HyperX",
+    "AZERTY · QWERTY · QWERTZ",
+    "TKL and full size"
+  ],
+  "how_h2": "Your keyboard becomes a clock",
+  "how_p": "Each digit is drawn by hand on real keys: hours on the left half, minutes on the right half, the seconds filling the nine keys above the arrows.",
+  "steps": [
+    {
+      "t": "Install it",
+      "p": "One small installer, no account, no admin rights. It waits next to the clock in the taskbar."
+    },
+    {
+      "t": "Step away",
+      "p": "After a minute without the mouse or the keyboard (you pick the delay), or the moment you lock your PC with Win+L."
+    },
+    {
+      "t": "Read the time from across the room",
+      "p": "Hours, then minutes, in big digits on the keys. Touch anything and your usual lighting is back at once."
+    }
+  ],
+  "feat_h2": "Everything a keyboard clock should do",
+  "feat_p": "Made to be read at a glance, and tuned to your setup.",
+  "features": [
+    {
+      "i": "digits",
+      "t": "Big digits you can read",
+      "p": "Two digits at a time, drawn key by key over the F-keys, the number row and the letters. The seconds fill the block above the arrow keys."
+    },
+    {
+      "i": "lock",
+      "t": "Shows up when you leave",
+      "p": "After a delay of your choice, as soon as you lock the PC, all the time, or on a keyboard shortcut. Hidden during full-screen games and in apps you choose."
+    },
+    {
+      "i": "palette",
+      "t": "Themes and colors",
+      "p": "Neon, Sunset, Ocean, Matrix, Rainbow, colors that follow the time of day, or your own colors, gradients and a soft background glow."
+    },
+    {
+      "i": "timer",
+      "t": "Timer and Pomodoro",
+      "p": "Start a timer from the taskbar: the keyboard shows the minutes left, then flashes when time is up. Pomodoro cycles get their own colors for work and breaks."
+    },
+    {
+      "i": "bell",
+      "t": "Alarms and reminders",
+      "p": "Pick a time and days of the week and the whole keyboard flashes. Press any key to stop it."
+    },
+    {
+      "i": "music",
+      "t": "Lights up with your music",
+      "p": "The keys around the digits can pulse with the beat or show a spectrum of what your PC is playing."
+    },
+    {
+      "i": "font",
+      "t": "Draw your own digits",
+      "p": "A built-in editor: click keys to redraw any digit, left side and right side, with a live preview."
+    },
+    {
+      "i": "moon",
+      "t": "Night mode and hourly chime",
+      "p": "Dim the keys, turn them red or switch them off at night. On the hour, a wave of light sweeps across the keyboard."
+    },
+    {
+      "i": "globe",
+      "t": "In your language",
+      "p": "English, French, Spanish, German, Italian and Portuguese, with 12 or 24-hour time and the date in between if you like."
+    }
+  ],
+  "app_h2": "A real app, not a script",
+  "app_p": "Everything is set in one window with a live preview of your keyboard. A small panel in the taskbar lets you pause, show the clock or start a timer.",
+  "shots": [
+    {
+      "page": "clock",
+      "tab": "Clock",
+      "caption": "What the keyboard shows: the time, the date in between, the seconds, 12 or 24 hours.",
+      "alt": "Keyboard Clock window, Clock page: display mode, seconds style and a live preview of the keyboard"
+    },
+    {
+      "page": "look",
+      "tab": "Look",
+      "caption": "Themes, colors, gradients, background and brightness, previewed as you change them.",
+      "alt": "Keyboard Clock window, Look page: themes, colors and background with a live keyboard preview"
+    },
+    {
+      "page": "timer",
+      "tab": "Timer and alarms",
+      "caption": "Timer, Pomodoro and alarms on the days you choose.",
+      "alt": "Keyboard Clock window, Timer page: timer, Pomodoro and alarm settings"
+    },
+    {
+      "page": "font",
+      "tab": "Font editor",
+      "caption": "Redraw any digit key by key. The other half of the keyboard stays dimmed as a guide.",
+      "alt": "Keyboard Clock font editor: the digit 8 drawn on the right half of the keyboard"
+    }
+  ],
+  "install_h2": "Install in a minute",
+  "install_p": "Windows 10 or 11, 64-bit. Keyboard Clock talks to your keyboard through the lighting software you already have.",
+  "install_steps": [
+    {
+      "t": "Download",
+      "p": "<a href=\"{SETUP}\">KeyboardClockSetup.exe</a>, from the latest release on GitHub."
+    },
+    {
+      "t": "Run it",
+      "p": "No admin rights needed. If Windows SmartScreen warns you, click <b>More info</b>, then <b>Run anyway</b>: the app is new, so Microsoft doesn't know it yet."
+    },
+    {
+      "t": "Keep your lighting software",
+      "p": "Keyboard Clock talks to the keys through G HUB, Windows Dynamic Lighting or OpenRGB. In G HUB, turn on <b>Allow games &amp; applications to control my lighting</b>. Keyboard Clock starts with Windows; you can turn that off."
+    }
+  ],
+  "install_more": [
+    {
+      "t": "Portable",
+      "p": "One file, nothing installed: download <a href=\"{REPO}/releases/latest/download/KeyboardClockPortable.exe\">KeyboardClockPortable.exe</a> and run it."
+    },
+    {
+      "t": "Command line",
+      "p": "<a href=\"{REPO}/releases/latest/download/keyboard-clock.exe\">keyboard-clock.exe</a> for scripts: demo, preview, settings.",
+      "code": "keyboard-clock --demo"
+    },
+    {
+      "t": "Python",
+      "p": "Python 3.9 or newer, no dependencies.",
+      "code": "pip install git+{REPO}"
+    }
+  ],
+  "install_fine": "Every release is built by GitHub Actions from the public source code, tested, and published with SHA-256 checksums. Updates install from the app in one click.",
+  "compat_h2": "Which keyboards work?",
+  "compat_p": "Any keyboard with per-key RGB lighting that one of these can drive. Your layout doesn't matter: keys are found by their position.",
+  "compat_yes_t": "Works",
+  "compat_yes": [
+    "<b>Logitech G</b> keyboards with per-key RGB, through <b>G HUB</b> (tested on a G PRO TKL).",
+    "<b>Razer, Corsair, ASUS, SteelSeries, HyperX</b> and others that support <b>Windows Dynamic Lighting</b> (beta).",
+    "Keyboards supported by <b>OpenRGB</b>, with its SDK server on (beta).",
+    "<b>TKL and full-size</b>, ISO and ANSI, AZERTY, QWERTY, QWERTZ and other layouts."
+  ],
+  "compat_no_t": "Doesn't work (yet)",
+  "compat_no": [
+    "Keyboards lit by zones or rows only: the digits need one light per key.",
+    "60% and 65% keyboards, which have no row of F-keys to draw on.",
+    "macOS and Linux.",
+    "Logitech Gaming Software (LGS), the old app before G HUB: not tested."
+  ],
+  "faq_h2": "Questions",
+  "faq": [
+    {
+      "q": "How do I show the time on my RGB keyboard?",
+      "a": "Install Keyboard Clock and leave your PC alone for a minute: the time appears on your keyboard in big digits, hours then minutes. You can also show it as soon as you lock the PC, all the time, or with a keyboard shortcut."
+    },
+    {
+      "q": "Which keyboards are supported?",
+      "a": "Logitech G keyboards with per-key RGB through G HUB, keyboards that work with Windows Dynamic Lighting (many Razer, Corsair, ASUS, SteelSeries and HyperX models) and keyboards supported by OpenRGB. TKL and full-size keyboards, in any layout."
+    },
+    {
+      "q": "Nothing shows on my Logitech keyboard. What should I check?",
+      "a": "Open G HUB, go to Settings and turn on Allow games &amp; applications to control my lighting, and keep G HUB running. Then click Show on the keyboard in Keyboard Clock's window to test it."
+    },
+    {
+      "q": "Does it work with Razer Synapse, Corsair iCUE or SteelSeries GG?",
+      "a": "Through Windows instead: Keyboard Clock uses Windows Dynamic Lighting or OpenRGB for these brands. On Windows 11, open Settings, Personalization, Dynamic Lighting: if your keyboard is listed there, it can show the clock. Switch Dynamic Lighting off for that keyboard so Windows and Keyboard Clock don't both drive the keys."
+    },
+    {
+      "q": "Will it slow down my games?",
+      "a": "No. It stays hidden while a game or a video is full screen, and drawing the clock takes a fraction of a millisecond. When it's not showing, it just waits."
+    },
+    {
+      "q": "Does it change my keyboard lighting for good?",
+      "a": "No. As soon as you touch the mouse or the keyboard, your usual lighting comes back. G HUB, Dynamic Lighting and OpenRGB keep all their own settings."
+    },
+    {
+      "q": "Why does Windows SmartScreen warn about the installer?",
+      "a": "SmartScreen warns about programs it hasn't seen many times yet, and Keyboard Clock is new. Click More info, then Run anyway. The code is open source, and every release is built by GitHub from that code and published with SHA-256 checksums."
+    },
+    {
+      "q": "Can I show a timer or a Pomodoro on the keyboard?",
+      "a": "Yes. Start a timer or a Pomodoro from the taskbar icon: the keyboard shows the minutes left, then flashes when time is up. Alarms work too, with the days of the week you choose."
+    },
+    {
+      "q": "Can I change the digits or the colors?",
+      "a": "Yes. Pick a theme or your own colors, gradients and background. The font editor lets you redraw any digit by clicking keys."
+    },
+    {
+      "q": "Is it free? Does it collect data?",
+      "a": "It is free and open source (MIT license), with no account, no ads and no telemetry. It only goes online to check GitHub for a new version once a day, which you can turn off."
+    }
+  ],
+  "final_h2": "Turn your keyboard into a clock you can read from your bed",
+  "final_p": "Free, open source and a small download.",
+  "foot_source": "Source code",
+  "foot_releases": "All releases",
+  "foot_privacy": "Privacy",
+  "foot_issues": "Report a problem",
+  "foot_license": "MIT license",
+  "foot_also": "Also by Ilyomix: <a href=\"https://ilyomix.github.io/glowback/\">Glowback</a>, ambient light for the RGB LEDs behind your monitor, synced to your screen.",
+  "foot_tm": "Logitech, Logitech G and G HUB are trademarks of Logitech. Razer, Corsair, ASUS, SteelSeries, HyperX and Windows are trademarks of their respective owners. Keyboard Clock is an independent project, not affiliated with or endorsed by any of them."
+}

@@ -1,0 +1,236 @@
+{
+  "title": "Keyboard Clock: Uhrzeit auf der RGB-Tastatur (kostenlos, Windows)",
+  "description": "Kostenlose Windows-App: Uhrzeit in großen Ziffern auf deiner RGB-Tastatur, wenn du weg bist. Logitech G HUB, Razer, Corsair und mehr. Timer, Pomodoro, Wecker.",
+  "og_title": "Keyboard Clock: die Uhrzeit in großen Ziffern auf deiner RGB-Tastatur",
+  "og_description": "Geh vom PC weg, und deine Tastatur wird zur Uhr, die du noch vom anderen Ende des Raums ablesen kannst. Kostenlos und Open Source, für Windows.",
+  "preview_title": "Die Uhrzeit, ganz groß,\nauf deiner RGB-Tastatur",
+  "preview_sub": "Keyboard Clock · kostenlos für Windows · Logitech G, Razer, Corsair und mehr",
+  "preview_alt": "Eine dunkle Tastatur: Die Stunden leuchten orange auf F-Tasten, Zahlenreihe und Buchstaben, die Sekunden füllen den Block über den Pfeiltasten",
+  "skip": "Zum Inhalt springen",
+  "nav_label": "Abschnitte",
+  "nav_how": "So funktioniert’s",
+  "nav_features": "Funktionen",
+  "nav_app": "Die App",
+  "nav_compat": "Tastaturen",
+  "nav_faq": "FAQ",
+  "lang_label": "Sprache",
+  "eyebrow": "Kostenlos und Open Source · Windows 10 und 11",
+  "h1": "Die Uhrzeit in großen Ziffern auf deiner <span class=\"o\">RGB</span>-<span class=\"c\">Tastatur</span>",
+  "lead": "Geh vom PC weg, und Keyboard Clock lässt erst die Stunden, dann die Minuten über deine Tasten leuchten, während die Sekunden daneben mitlaufen. Lesbar vom Bett oder vom Sofa aus. Eine Berührung, und deine gewohnte Beleuchtung ist zurück.",
+  "cta_download": "Für Windows herunterladen",
+  "cta_source": "Quellcode auf GitHub",
+  "cta_note": "Kostenlos · Ohne Konto · Version {{version}} · Logitech G HUB, Dynamische Beleuchtung von Windows, OpenRGB",
+  "cta_star": "Auf GitHub einen Stern geben",
+  "demo_label": "Live-Demo: deine Tastatur zeigt die aktuelle Uhrzeit, erst die Stunden, dann die Minuten",
+  "demo_caption": "Live-Demo: Das ist deine aktuelle Uhrzeit, so wie deine Tastatur sie zeigt.",
+  "demo_themes_label": "Designs",
+  "demo_themes": {
+    "neon": "Neon",
+    "sunset": "Sonnenuntergang",
+    "matrix": "Matrix",
+    "rainbow": "Regenbogen"
+  },
+  "works_label": "Funktioniert mit",
+  "works": [
+    "Logitech G HUB",
+    "Dynamische Beleuchtung von Windows",
+    "OpenRGB",
+    "Razer · Corsair · ASUS · SteelSeries · HyperX",
+    "AZERTY · QWERTY · QWERTZ",
+    "TKL und Full-Size"
+  ],
+  "how_h2": "Deine Tastatur wird zur Uhr",
+  "how_p": "Jede Ziffer ist von Hand auf echte Tasten gezeichnet: die Stunden auf der linken Hälfte, die Minuten auf der rechten, die Sekunden auf den neun Tasten über den Pfeiltasten.",
+  "steps": [
+    {
+      "t": "Installieren",
+      "p": "Ein kleines Installationsprogramm, kein Konto, keine Administratorrechte. Danach wartet die App neben der Uhr in der Taskleiste."
+    },
+    {
+      "t": "Weggehen",
+      "p": "Nach einer Minute ohne Maus und Tastatur (die Wartezeit legst du selbst fest) oder sobald du den PC mit Win+L sperrst."
+    },
+    {
+      "t": "Die Uhrzeit vom anderen Ende des Raums ablesen",
+      "p": "Erst die Stunden, dann die Minuten, in großen Ziffern auf den Tasten. Eine Berührung, und deine gewohnte Beleuchtung ist sofort zurück."
+    }
+  ],
+  "feat_h2": "Alles, was eine Tastatur-Uhr können sollte",
+  "feat_p": "Auf einen Blick ablesbar und auf dein Setup abgestimmt.",
+  "features": [
+    {
+      "i": "digits",
+      "t": "Große, gut lesbare Ziffern",
+      "p": "Zwei Ziffern auf einmal, Taste für Taste über F-Tasten, Zahlenreihe und Buchstaben gezeichnet. Die Sekunden füllen den Block über den Pfeiltasten."
+    },
+    {
+      "i": "lock",
+      "t": "Erscheint, wenn du gehst",
+      "p": "Nach einer Wartezeit deiner Wahl, sobald du den PC sperrst, dauerhaft oder per Tastenkürzel. Ausgeblendet bei Spielen im Vollbild und in Apps, die du auswählst."
+    },
+    {
+      "i": "palette",
+      "t": "Designs und Farben",
+      "p": "Neon, Sonnenuntergang, Ozean, Matrix, Regenbogen, Farben, die der Tageszeit folgen, oder deine eigenen Farben, Verläufe und ein sanftes Leuchten im Hintergrund."
+    },
+    {
+      "i": "timer",
+      "t": "Timer und Pomodoro",
+      "p": "Starte einen Timer über die Taskleiste: Die Tastatur zeigt die verbleibenden Minuten und blinkt, wenn die Zeit um ist. Pomodoro-Runden bekommen eigene Farben für Arbeit und Pausen."
+    },
+    {
+      "i": "bell",
+      "t": "Wecker und Erinnerungen",
+      "p": "Wähle eine Uhrzeit und Wochentage, und die ganze Tastatur blinkt. Ein Druck auf eine beliebige Taste stoppt sie."
+    },
+    {
+      "i": "music",
+      "t": "Leuchtet mit deiner Musik",
+      "p": "Die Tasten rund um die Ziffern können im Takt pulsieren oder als Spektrum zeigen, was dein PC gerade abspielt."
+    },
+    {
+      "i": "font",
+      "t": "Zeichne deine eigenen Ziffern",
+      "p": "Ein eingebauter Editor: Klicke auf Tasten, um jede Ziffer neu zu zeichnen, links und rechts, mit Live-Vorschau."
+    },
+    {
+      "i": "moon",
+      "t": "Nachtmodus und Stundenschlag",
+      "p": "Nachts kannst du die Tasten dimmen, rot färben oder ausschalten. Zur vollen Stunde läuft eine Lichtwelle über die Tastatur."
+    },
+    {
+      "i": "globe",
+      "t": "In deiner Sprache",
+      "p": "Englisch, Französisch, Spanisch, Deutsch, Italienisch und Portugiesisch, im 12- oder 24-Stunden-Format und auf Wunsch mit dem Datum dazwischen."
+    }
+  ],
+  "app_h2": "Eine echte App, kein Skript",
+  "app_p": "Alles stellst du in einem Fenster ein, mit Live-Vorschau deiner Tastatur. Über ein kleines Panel in der Taskleiste kannst du pausieren, die Uhr anzeigen oder einen Timer starten.",
+  "shots": [
+    {
+      "page": "clock",
+      "tab": "Uhr",
+      "caption": "Was die Tastatur zeigt: die Uhrzeit, dazwischen das Datum, die Sekunden, 12 oder 24 Stunden.",
+      "alt": "Fenster von Keyboard Clock, Seite „Uhr“: Anzeigemodus, Sekundenstil und Live-Vorschau der Tastatur"
+    },
+    {
+      "page": "look",
+      "tab": "Aussehen",
+      "caption": "Designs, Farben, Verläufe, Hintergrund und Helligkeit, mit Vorschau bei jeder Änderung.",
+      "alt": "Fenster von Keyboard Clock, Seite „Aussehen“: Designs, Farben und Hintergrund mit Live-Vorschau der Tastatur"
+    },
+    {
+      "page": "timer",
+      "tab": "Timer und Wecker",
+      "caption": "Timer, Pomodoro und Wecker an den Tagen deiner Wahl.",
+      "alt": "Fenster von Keyboard Clock, Seite „Timer“: Einstellungen für Timer, Pomodoro und Wecker"
+    },
+    {
+      "page": "font",
+      "tab": "Schrifteditor",
+      "caption": "Zeichne jede Ziffer Taste für Taste neu. Die andere Tastaturhälfte bleibt zur Orientierung gedimmt.",
+      "alt": "Schrifteditor von Keyboard Clock: die Ziffer 8, auf die rechte Tastaturhälfte gezeichnet"
+    }
+  ],
+  "install_h2": "In einer Minute installiert",
+  "install_p": "Windows 10 oder 11, 64 Bit. Keyboard Clock steuert deine Tastatur über die Beleuchtungssoftware, die du schon hast.",
+  "install_steps": [
+    {
+      "t": "Herunterladen",
+      "p": "<a href=\"{SETUP}\">KeyboardClockSetup.exe</a> aus dem neuesten Release auf GitHub."
+    },
+    {
+      "t": "Ausführen",
+      "p": "Keine Administratorrechte nötig. Falls Windows SmartScreen warnt, klicke auf <b>Weitere Informationen</b> und dann auf <b>Trotzdem ausführen</b>: Die App ist neu, deshalb kennt Microsoft sie noch nicht."
+    },
+    {
+      "t": "Beleuchtungssoftware behalten",
+      "p": "Keyboard Clock steuert die Tasten über G HUB, die Dynamische Beleuchtung von Windows oder OpenRGB. Aktiviere in G HUB die Option <b>„Allow games &amp; applications to control my lighting“</b>. Keyboard Clock startet mit Windows; das kannst du abschalten."
+    }
+  ],
+  "install_more": [
+    {
+      "t": "Portable Version",
+      "p": "Eine Datei, keine Installation: Lade <a href=\"{REPO}/releases/latest/download/KeyboardClockPortable.exe\">KeyboardClockPortable.exe</a> herunter und starte sie."
+    },
+    {
+      "t": "Kommandozeile",
+      "p": "<a href=\"{REPO}/releases/latest/download/keyboard-clock.exe\">keyboard-clock.exe</a> für Skripte: Demo, Vorschau, Einstellungen.",
+      "code": "keyboard-clock --demo"
+    },
+    {
+      "t": "Python",
+      "p": "Python 3.9 oder neuer, keine Abhängigkeiten.",
+      "code": "pip install git+{REPO}"
+    }
+  ],
+  "install_fine": "Jedes Release wird von GitHub Actions aus dem öffentlichen Quellcode gebaut, getestet und mit SHA-256-Prüfsummen veröffentlicht. Updates installierst du mit einem Klick direkt in der App.",
+  "compat_h2": "Welche Tastaturen funktionieren?",
+  "compat_p": "Jede Tastatur mit RGB-Beleuchtung pro Taste, die eine dieser Lösungen steuern kann. Dein Layout spielt keine Rolle: Die Tasten werden über ihre Position erkannt.",
+  "compat_yes_t": "Funktioniert",
+  "compat_yes": [
+    "Tastaturen von <b>Logitech G</b> mit RGB-Beleuchtung pro Taste, über <b>G HUB</b> (getestet mit einer G PRO TKL).",
+    "<b>Razer, Corsair, ASUS, SteelSeries, HyperX</b> und andere, die die <b>Dynamische Beleuchtung von Windows</b> unterstützen (Beta).",
+    "Von <b>OpenRGB</b> unterstützte Tastaturen, mit eingeschaltetem SDK-Server (Beta).",
+    "<b>TKL und Full-Size</b>, ISO und ANSI, AZERTY, QWERTY, QWERTZ und andere Layouts."
+  ],
+  "compat_no_t": "Funktioniert (noch) nicht",
+  "compat_no": [
+    "Tastaturen, die nur in Zonen oder Reihen leuchten: Die Ziffern brauchen ein Licht pro Taste.",
+    "60- und 65-%-Tastaturen, denen die F-Tasten-Reihe zum Zeichnen fehlt.",
+    "macOS und Linux.",
+    "Logitech Gaming Software (LGS), die alte App vor G HUB: nicht getestet."
+  ],
+  "faq_h2": "Häufige Fragen",
+  "faq": [
+    {
+      "q": "Wie zeige ich die Uhrzeit auf meiner RGB-Tastatur an?",
+      "a": "Installiere Keyboard Clock und lass deinen PC eine Minute lang in Ruhe: Die Uhrzeit erscheint in großen Ziffern auf deiner Tastatur, erst die Stunden, dann die Minuten. Du kannst sie auch anzeigen lassen, sobald du den PC sperrst, dauerhaft oder per Tastenkürzel."
+    },
+    {
+      "q": "Welche Tastaturen werden unterstützt?",
+      "a": "Tastaturen von Logitech G mit RGB-Beleuchtung pro Taste über G HUB, Tastaturen, die mit der Dynamischen Beleuchtung von Windows funktionieren (viele Modelle von Razer, Corsair, ASUS, SteelSeries und HyperX), und Tastaturen, die OpenRGB unterstützt. TKL- und Full-Size-Tastaturen, in jedem Layout."
+    },
+    {
+      "q": "Auf meiner Logitech-Tastatur erscheint nichts. Was sollte ich prüfen?",
+      "a": "Öffne G HUB, geh in die Einstellungen, aktiviere „Allow games &amp; applications to control my lighting“ und lass G HUB laufen. Klicke dann im Fenster von Keyboard Clock auf „Auf der Tastatur zeigen“, um es zu testen."
+    },
+    {
+      "q": "Funktioniert Keyboard Clock mit Razer Synapse, Corsair iCUE oder SteelSeries GG?",
+      "a": "Nicht direkt, sondern über Windows: Für diese Marken nutzt Keyboard Clock die Dynamische Beleuchtung von Windows oder OpenRGB. Öffne unter Windows 11 Einstellungen > Personalisierung > Dynamische Beleuchtung: Wird deine Tastatur dort aufgeführt, kann sie die Uhr anzeigen. Schalte die Dynamische Beleuchtung für diese Tastatur aus, damit Windows und Keyboard Clock nicht gleichzeitig die Tasten steuern."
+    },
+    {
+      "q": "Bremst Keyboard Clock meine Spiele aus?",
+      "a": "Nein. Solange ein Spiel oder Video im Vollbild läuft, bleibt die App ausgeblendet, und das Zeichnen der Uhr dauert nur den Bruchteil einer Millisekunde. Wenn die Uhr nicht angezeigt wird, wartet die App einfach."
+    },
+    {
+      "q": "Verändert Keyboard Clock meine Tastaturbeleuchtung dauerhaft?",
+      "a": "Nein. Sobald du Maus oder Tastatur berührst, ist deine gewohnte Beleuchtung zurück. G HUB, die Dynamische Beleuchtung und OpenRGB behalten alle ihre eigenen Einstellungen."
+    },
+    {
+      "q": "Warum warnt Windows SmartScreen vor dem Installationsprogramm?",
+      "a": "SmartScreen warnt vor Programmen, die es noch nicht oft gesehen hat, und Keyboard Clock ist neu. Klicke auf „Weitere Informationen“ und dann auf „Trotzdem ausführen“. Der Code ist Open Source, und jedes Release wird von GitHub aus diesem Code gebaut und mit SHA-256-Prüfsummen veröffentlicht."
+    },
+    {
+      "q": "Kann ich einen Timer oder Pomodoro auf der Tastatur anzeigen?",
+      "a": "Ja. Starte einen Timer oder Pomodoro über das Symbol in der Taskleiste: Die Tastatur zeigt die verbleibenden Minuten und blinkt, wenn die Zeit um ist. Wecker gibt es auch, an den Wochentagen deiner Wahl."
+    },
+    {
+      "q": "Kann ich die Ziffern oder die Farben ändern?",
+      "a": "Ja. Wähle ein Design oder eigene Farben, Verläufe und Hintergründe. Im Schrifteditor zeichnest du jede Ziffer per Klick auf die Tasten neu."
+    },
+    {
+      "q": "Ist Keyboard Clock kostenlos? Sammelt die App Daten?",
+      "a": "Die App ist kostenlos und Open Source (MIT-Lizenz), ohne Konto, ohne Werbung und ohne Telemetrie. Online geht sie nur einmal am Tag, um auf GitHub nach einer neuen Version zu suchen, und das kannst du abschalten."
+    }
+  ],
+  "final_h2": "Mach deine Tastatur zur Uhr, die du vom Bett aus lesen kannst",
+  "final_p": "Kostenlos, Open Source und ein kleiner Download.",
+  "foot_source": "Quellcode",
+  "foot_releases": "Alle Releases",
+  "foot_privacy": "Datenschutz",
+  "foot_issues": "Problem melden",
+  "foot_license": "MIT-Lizenz",
+  "foot_also": "Ebenfalls von Ilyomix: <a href=\"https://ilyomix.github.io/glowback/\">Glowback</a>, Umgebungslicht für die RGB-LEDs hinter deinem Monitor, synchron zu deinem Bildschirm.",
+  "foot_tm": "Logitech, Logitech G und G HUB sind Marken von Logitech. Razer, Corsair, ASUS, SteelSeries, HyperX und Windows sind Marken ihrer jeweiligen Inhaber. Keyboard Clock ist ein unabhängiges Projekt, steht in keiner Verbindung zu diesen Unternehmen und wird von keinem von ihnen unterstützt oder empfohlen."
+}

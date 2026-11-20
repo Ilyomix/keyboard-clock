@@ -4,17 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "keyboard-clock"
-version = "0.1.0"
-description = "The time in big digits on your RGB keyboard while you are away: Logitech G HUB per-key lighting, timer, Pomodoro, alarms, music, font editor, tray app, 6 languages."
+version = "1.0.0"
+description = "The time in big digits on your RGB keyboard while you are away: Logitech G HUB, Windows Dynamic Lighting (Razer, Corsair, ASUS, SteelSeries, HyperX) and OpenRGB. Timer, Pomodoro, alarms, music, font editor, 6 languages."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE", "licenses/Inter-OFL.txt"]
 requires-python = ">=3.9"
 authors = [{ name = "Ilyomix" }]
-keywords = ["keyboard-clock", "rgb-keyboard", "logitech", "logitech-g", "g-hub", "per-key-rgb", "clock", "pomodoro",
-            "timer", "alarm", "led", "windows"]
+keywords = ["keyboard-clock", "rgb-keyboard", "logitech", "logitech-g", "g-hub", "razer", "corsair", "dynamic-lighting",
+            "lamparray", "openrgb", "per-key-rgb", "clock", "pomodoro", "timer", "alarm", "led", "windows"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Win32 (MS Windows)",
     "Intended Audience :: End Users/Desktop",
     "Operating System :: Microsoft :: Windows :: Windows 10",
@@ -25,7 +25,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Ilyomix/keyboard-clock"
+Homepage = "https://ilyomix.github.io/keyboard-clock/"
+Source = "https://github.com/Ilyomix/keyboard-clock"
 Issues = "https://github.com/Ilyomix/keyboard-clock/issues"
 
 [project.scripts]

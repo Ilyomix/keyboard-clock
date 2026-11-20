@@ -1,0 +1,33 @@
+# Keyboard Clock
+
+> Free Windows app that draws the time in big digits on your RGB keyboard while you are away. Logitech G HUB, Razer, Corsair and more. Timer, Pomodoro, alarms.
+
+- Website: https://ilyomix.github.io/keyboard-clock/
+- Source code (MIT): https://github.com/Ilyomix/keyboard-clock
+- Download (Windows installer): https://github.com/Ilyomix/keyboard-clock/releases/latest/download/KeyboardClockSetup.exe
+- Version: 1.0.0
+
+## Features
+
+- Big digits you can read: Two digits at a time, drawn key by key over the F-keys, the number row and the letters. The seconds fill the block above the arrow keys.
+- Shows up when you leave: After a delay of your choice, as soon as you lock the PC, all the time, or on a keyboard shortcut. Hidden during full-screen games and in apps you choose.
+- Themes and colors: Neon, Sunset, Ocean, Matrix, Rainbow, colors that follow the time of day, or your own colors, gradients and a soft background glow.
+- Timer and Pomodoro: Start a timer from the taskbar: the keyboard shows the minutes left, then flashes when time is up. Pomodoro cycles get their own colors for work and breaks.
+- Alarms and reminders: Pick a time and days of the week and the whole keyboard flashes. Press any key to stop it.
+- Lights up with your music: The keys around the digits can pulse with the beat or show a spectrum of what your PC is playing.
+- Draw your own digits: A built-in editor: click keys to redraw any digit, left side and right side, with a live preview.
+- Night mode and hourly chime: Dim the keys, turn them red or switch them off at night. On the hour, a wave of light sweeps across the keyboard.
+- In your language: English, French, Spanish, German, Italian and Portuguese, with 12 or 24-hour time and the date in between if you like.
+
+## FAQ
+
+- How do I show the time on my RGB keyboard? Install Keyboard Clock and leave your PC alone for a minute: the time appears on your keyboard in big digits, hours then minutes. You can also show it as soon as you lock the PC, all the time, or with a keyboard shortcut.
+- Which keyboards are supported? Logitech G keyboards with per-key RGB through G HUB, keyboards that work with Windows Dynamic Lighting (many Razer, Corsair, ASUS, SteelSeries and HyperX models) and keyboards supported by OpenRGB. TKL and full-size keyboards, in any layout.
+- Nothing shows on my Logitech keyboard. What should I check? Open G HUB, go to Settings and turn on Allow games & applications to control my lighting, and keep G HUB running. Then click Show on the keyboard in Keyboard Clock's window to test it.
+- Does it work with Razer Synapse, Corsair iCUE or SteelSeries GG? Through Windows instead: Keyboard Clock uses Windows Dynamic Lighting or OpenRGB for these brands. On Windows 11, open Settings, Personalization, Dynamic Lighting: if your keyboard is listed there, it can show the clock. Switch Dynamic Lighting off for that keyboard so Windows and Keyboard Clock don't both drive the keys.
+- Will it slow down my games? No. It stays hidden while a game or a video is full screen, and drawing the clock takes a fraction of a millisecond. When it's not showing, it just waits.
+- Does it change my keyboard lighting for good? No. As soon as you touch the mouse or the keyboard, your usual lighting comes back. G HUB, Dynamic Lighting and OpenRGB keep all their own settings.
+- Why does Windows SmartScreen warn about the installer? SmartScreen warns about programs it hasn't seen many times yet, and Keyboard Clock is new. Click More info, then Run anyway. The code is open source, and every release is built by GitHub from that code and published with SHA-256 checksums.
+- Can I show a timer or a Pomodoro on the keyboard? Yes. Start a timer or a Pomodoro from the taskbar icon: the keyboard shows the minutes left, then flashes when time is up. Alarms work too, with the days of the week you choose.
+- Can I change the digits or the colors? Yes. Pick a theme or your own colors, gradients and background. The font editor lets you redraw any digit by clicking keys.
+- Is it free? Does it collect data? It is free and open source (MIT license), with no account, no ads and no telemetry. It only goes online to check GitHub for a new version once a day, which you can turn off.

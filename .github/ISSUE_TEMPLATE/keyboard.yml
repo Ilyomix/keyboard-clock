@@ -1,0 +1,61 @@
+name: My keyboard works / doesn't work
+description: Tell which keyboard you tried. It helps everyone with the same model.
+title: "[Keyboard] "
+labels: ["keyboard report"]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: Keyboard
+      description: Brand and model, as written on the box.
+      placeholder: Logitech G PRO TKL, Razer BlackWidow V4, Corsair K70…
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Does the clock show correctly?
+      options:
+        - "Yes, everything works"
+        - "Partly: some keys are wrong or missing"
+        - "No, nothing shows"
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Through
+      description: The "Keyboard used" setting on the Keyboard page.
+      options:
+        - Logitech G HUB
+        - Windows Dynamic Lighting
+        - OpenRGB
+        - "I don't know"
+    validations:
+      required: true
+  - type: dropdown
+    id: layout
+    attributes:
+      label: Layout
+      options:
+        - TKL (no numpad)
+        - Full size (with numpad)
+        - 75% or smaller
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What did you see?
+      description: Which keys were wrong, a photo of the keyboard showing the clock, anything that helps.
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: 'Click the Keyboard Clock icon next to the clock, then Open the log, and paste its last lines (the file is %LOCALAPPDATA%\KeyboardClock\keyboard-clock.log).'
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Keyboard Clock version and Windows version
+      placeholder: Keyboard Clock 1.0.0, Windows 11 24H2
