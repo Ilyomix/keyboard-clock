@@ -242,47 +242,40 @@ def daytime_color(wall):
 
 
 # ---------------------------------------------------------------------------
-# Digits drawn key by key ("classic"): one string per row, # = lit key. Rows: function keys (4 cells:
-# F1-F4 for the left digit, F5-F8 for the right one), then the number row (3 cells), the top letter
-# row (4 cells, half a key to the left), the home row (4 cells) and the bottom letter row (3 cells).
-# A tuple row is (left digit, right digit): F1-F4 sit over the number keys, F5-F8 are half a key off.
-# A digit of 4 rows (the 0) leaves the function keys dark.
+# The built-in digits, drawn key by key in the font editor: for each digit, the keys of the left digit
+# (function keys F1-F4) and of the right one (F5-F8), which sit differently under the function keys.
+# Keys are named by position after the US layout (QWERTY): "Q" is the key A on an AZERTY keyboard.
 # ---------------------------------------------------------------------------
-_BAR = ("###.", "####")
-CLASSIC = {
-    "0": ["###", "#..#", "#..#", "###"],
-    "1": ["...#", "..#", "..#.", ".#..", "#.."],               # a single slash (F4 / F8 on top)
-    "2": [_BAR, "..#", "####", "#...", "###"],
-    "3": [_BAR, "..#", ".###", "...#", "###"],
-    "4": [("#.#.", "#..#"), "#.#", "####", "...#", "..#"],
-    "5": [_BAR, "#..", "####", "...#", "###"],
-    "6": [(".#..", ".#.."), "#..", "####", "#..#", "###"],    # small hook (F2 / F6)
-    "7": [_BAR, "..#", "..#.", ".#..", "#.."],
-    "8": [".##.", "#.#", ".###", "#..#", "###"],              # small loop on top (F2-F3 / F6-F7)
-    "9": [_BAR, "#.#", ".###", "...#", ".##"],                # curled tail
-    " ": [],
+DEFAULT_FONT = {
+    "0": (('2', '3', '4', 'Q', 'R', 'A', 'F', 'Z', 'X', 'C'),
+          ('7', '8', '9', 'Y', 'O', 'H', 'L', 'N', 'M', ',')),
+    "1": (('F4', '4', 'E', 'S', 'Z'),
+          ('F8', '9', 'I', 'J', 'N')),
+    "2": (('F1', 'F2', 'F3', '4', 'Q', 'W', 'E', 'R', 'A', 'Z', 'X', 'C'),
+          ('F5', 'F6', 'F7', 'F8', '9', 'Y', 'U', 'I', 'O', 'H', 'N', 'M', ',')),
+    "3": (('F1', 'F2', 'F3', '4', 'W', 'E', 'R', 'F', 'Z', 'X', 'C'),
+          ('F5', 'F6', 'F7', 'F8', '9', 'U', 'I', 'O', 'L', 'N', 'M', ',')),
+    "4": (('F1', 'F3', '2', '4', 'Q', 'W', 'E', 'R', 'F', 'C'),
+          ('F5', 'F8', '7', '9', 'Y', 'U', 'I', 'O', 'L', ',')),
+    "5": (('F1', 'F2', 'F3', '2', 'Q', 'W', 'E', 'R', 'F', 'Z', 'X', 'C'),
+          ('F5', 'F6', 'F7', 'F8', '7', 'Y', 'U', 'I', 'O', 'L', 'N', 'M', ',')),
+    "6": (('F2', '2', 'Q', 'W', 'E', 'R', 'A', 'F', 'Z', 'X', 'C'),
+          ('F6', '7', 'Y', 'U', 'I', 'O', 'H', 'L', 'N', 'M', ',')),
+    "7": (('F1', 'F2', 'F3', '4', 'E', 'S', 'Z'),
+          ('F5', 'F6', 'F7', 'F8', '9', 'I', 'J', 'N')),
+    "8": (('F2', 'F3', '2', '4', 'W', 'E', 'R', 'A', 'F', 'Z', 'X', 'C'),
+          ('F6', 'F7', '7', '9', 'U', 'I', 'O', 'H', 'L', 'N', 'M', ',')),
+    "9": (('F1', 'F2', 'F3', '2', '4', 'W', 'E', 'R', 'F', 'X', 'C'),
+          ('F5', 'F6', 'F7', 'F8', '7', '9', 'U', 'I', 'O', 'L', 'M', ',')),
 }
-CLASSIC_ROW_START = {1: 0.0, 2: -0.5, 3: -0.25, 4: 0.25}     # first cell of each row, from the digit's anchor
 DIGIT_ANCHOR = (2.5, 7.5)                                     # centre of key "2" (left digit) and "7" (right)
 F_KEYS = (("F1", "F2", "F3", "F4"), ("F5", "F6", "F7", "F8"))
 
 
 def classic_keys(model, ch, pos):
-    """Keys lit by character `ch` at position `pos` (0 = left digit, 1 = right digit)."""
-    rows = CLASSIC.get(ch, [])
-    keys = []
-    if len(rows) == 5:
-        f = rows[0][pos] if isinstance(rows[0], tuple) else rows[0]
-        keys += [F_KEYS[pos][i] for i, p in enumerate(f) if p == "#"]
-        rows = rows[1:]
-    for r, line in enumerate(rows, start=1):
-        for i, p in enumerate(line):
-            if p == "#":
-                k = model.key_at(r, DIGIT_ANCHOR[pos] + CLASSIC_ROW_START[r] + i)
-                if k is None:
-                    raise ValueError(f"digit {ch!r}: no key on row {r}, cell {i}")
-                keys.append(k)
-    return keys
+    """Built-in keys of character `ch` at position `pos` (0 = left digit, 1 = right digit), on this model."""
+    keys = DEFAULT_FONT.get(ch)
+    return [k for k in keys[pos] if k in model.center] if keys else []
 
 
 # Custom digits (font editor): {"0": [[left digit keys], [right digit keys]], …}, keys by name.
@@ -3708,7 +3701,8 @@ class AppWindow:
     PAGES = (("clock", "clock", "nav_clock"), ("look", "palette", "nav_look"), ("when", "timer", "nav_when"),
              ("font", "font", "nav_font"), ("keyboard", "keyboard", "nav_keyboard"),
              ("settings", "settings", "nav_settings"), ("about", "info", "nav_about"))
-    LIVE_PAGES = ("clock", "look")
+    LIVE_PAGES = ("clock", "look")                  # the live keyboard moves (timer)
+    PINNED = ("clock", "look", "font")               # the keyboard stays in view while the options scroll
     MODE_ICONS = {"time": "clock", "time_date": "calendar", "scroll": "arrow", "mixed": "layers", "custom": "edit"}
     SLIDERS = ("secs", "speed", "hue", "sat", "bghue", "bgsat", "bg_level", "brightness", "night_bright")
     BG, CARD, LINE, HOVER, SELECT = 0x121317, 0x1A1B21, 0x24262E, 0x212329, 0x1F2129
@@ -3734,6 +3728,7 @@ class AppWindow:
         self.role, self.digit_side, self.stop_sel, self.hue_memo = "hours", 0, 0, None
         self.font_digit, self.font_side = "1", 0
         self.bufs, self.preview_rect = None, None
+        self.pin, self.pin_rects, self._pinning, self.wide = ([], []), [], False, False
         self.sw = self.cx0 = self.cx1 = 0
         self.t0 = time.monotonic()
         self._model = self._renderer = self._rver = None
@@ -3843,7 +3838,8 @@ class AppWindow:
         (self.side if side else self.content)[1].append(("icon", hicon, x, y, size))
 
     def add(self, wid, kind, rect, side=False, focus=True, **kw):
-        self.widgets.append(dict(id=wid, kind=kind, rect=tuple(int(v) for v in rect), side=side, focus=focus, **kw))
+        self.widgets.append(dict(id=wid, kind=kind, rect=tuple(int(v) for v in rect), side=side, focus=focus,
+                                 pin=self._pinning, **kw))
 
     def tw(self, text, font):
         return self.painter.text_width(text, font)
@@ -4156,8 +4152,8 @@ class AppWindow:
         s, wall = self.store.s, dt.datetime.now()
         return self.renderer().frame(time.monotonic() - self.t0, wall, None, night_now(s["night"], wall))
 
-    def font_frame(self, model=None, digit=None):
-        """The digit being edited, on the left (hours color) and on the right (minutes color)."""
+    def font_frame(self, model=None, digit=None, side=None):
+        """The digit being edited: left in the hours color, right in the minutes color (only `side` if given)."""
         s = self.store.s
         m = model or self.model()
         custom = s["display"]["custom_font"] if s["display"]["font"] == "custom" else None
@@ -4165,8 +4161,9 @@ class AppWindow:
         frame = {k: (0, 0, 0) for k in m.keys}
         colors = s["look"]["colors"]
         for pos, role in ((0, "hours"), (1, "minutes")):
-            for k in font_keys(m, d, pos, custom):
-                frame[k] = hex_color(colors[role])
+            if side is None or pos == side:
+                for k in font_keys(m, d, pos, custom):
+                    frame[k] = hex_color(colors[role])
         return frame
 
     def _keyboard(self, x, y, w, frame, area=None):
@@ -4196,34 +4193,58 @@ class AppWindow:
             self.content[0].insert(at, ("glows", glows, x, y, x + w, y + h))
         return h
 
-    def _preview_card(self, y):
-        p, s, x0, x1 = self.px, self.store.s, self.cx0, self.cx1
-        pad = p(20)
-        kw = x1 - x0 - 2 * pad
-        m = self.model()
-        kh = kw / (m.width + 0.64) * (m.height + 0.64)
-        h = pad + p(36) + p(14) + kh + pad
-        self._card(y, h)
-        self.T(tr("live_preview"), self.fonts["h2"], MenuPainter.TEXT, x0 + pad, y + pad, x1, y + pad + p(36))
-        bx = self._button("show", x1 - pad, y + pad + p(1), tr("show_keyboard"), "secondary", icon="light")
-        tx = bx - p(28) - p(42)
-        self._toggle("enabled", tx, y + pad + p(7), s["enabled"])
-        lw = self.tw(tr("clock"), self.fonts["body"])
-        self.T(tr("clock"), self.fonts["body"], MenuPainter.TEXT, tx - p(12) - lw, y + pad, tx - p(12), y + pad + p(36))
-        ky = y + pad + p(50)
-        self._keyboard(x0 + pad, ky, kw, self.live_frame())
-        self.preview_rect = (int(x0 + pad - p(8)), int(ky - p(8)), int(x0 + pad + kw + p(8)), int(ky + kh + p(8)))
+    def _pin_card(self, x0, x1, y, max_h):
+        """The live keyboard (Clock, Look) or the font editor's keyboard, in a card: returns its bottom."""
+        p, s, m = self.px, self.store.s, self.model()
+        pad, head = p(20), p(50)
+        foot = p(30) if self.page == "font" else 0
+        ratio = (m.height + 0.64) / (m.width + 0.64)
+        kw = min(x1 - x0 - 2 * pad, max(p(320), (max_h - 2 * pad - head - foot) / ratio))
+        kh = kw * ratio
+        h = pad + head + kh + foot + pad
+        self._card(y, h, x0, x1)
+        kx, ky = x0 + (x1 - x0 - kw) / 2, y + pad + head
+        if self.page == "font":
+            sw_ = min(p(240), (x1 - x0) / 2 - pad)
+            self._segmented("fside", x0 + pad, x0 + pad + sw_, y + pad - p(2),
+                            [(0, None, tr("font_left")), (1, None, tr("font_right"))], self.font_side)
+            self._button("font:show", x1 - pad, y + pad + p(1), tr("show_keyboard"), "secondary", icon="light")
+            self._keyboard(kx, ky, kw, self.font_frame(side=self.font_side), area=set(digit_area(m, self.font_side)))
+            self.T(tr("font_hint"), self.painter.f_small, MenuPainter.MUTED, x0 + pad, ky + kh + p(8), x1 - pad,
+                   ky + kh + p(28), 0x8000)
+        else:
+            self.T(tr("live_preview"), self.fonts["h2"], MenuPainter.TEXT, x0 + pad, y + pad, x1, y + pad + p(36))
+            bx = self._button("show", x1 - pad, y + pad + p(1), tr("show_keyboard"), "secondary", icon="light")
+            tx = bx - p(28) - p(42)
+            self._toggle("enabled", tx, y + pad + p(7), s["enabled"])
+            lw = self.tw(tr("clock"), self.fonts["body"])
+            self.T(tr("clock"), self.fonts["body"], MenuPainter.TEXT, tx - p(12) - lw, y + pad, tx - p(12),
+                   y + pad + p(36))
+            self._keyboard(kx, ky, kw, self.live_frame())
+            self.preview_rect = (int(kx - p(8)), int(ky - p(8)), int(kx + kw + p(8)), int(ky + kh + p(8)))
         return y + h
 
     # ---- layout
     def compose(self):
+        """Display lists for the sidebar, the page and its pinned part (title and keyboard, which stay in view
+        while the options scroll), and the widgets under them."""
         p, (W, H) = self.px, self.size
-        self.widgets, self.side, self.content, self.preview_rect = [], ([], []), ([], []), None
+        self.widgets, self.side, self.content, self.pin = [], ([], []), ([], []), ([], [])
+        self.preview_rect, self.pin_rects = None, []
         self.sw = p(264)
-        self.cx0 = self.sw + p(8)
-        self.cx1 = max(self.cx0 + p(380), min(W - p(36), self.cx0 + p(860)))
+        left, right = self.sw + p(8), W - p(36)
+        avail = right - left
+        pinned = self.page in self.PINNED
+        self.wide = pinned and avail >= p(1150)
+        if self.wide:                                    # options on the left, the keyboard on the right
+            self.cx0, self.cx1 = left, left + max(p(520), min(p(680), avail * 0.45))
+        else:
+            width = max(p(380), min(avail, p(900)))
+            self.cx0 = left + max(0, (avail - width) / 2)
+            self.cx1 = self.cx0 + width
         self._sidebar()
-        y = getattr(self, "_page_" + self.page)(p(30) - self.scroll)
+        top = self._compose_pin(p(30)) if pinned else p(30)
+        y = getattr(self, "_page_" + self.page)(top - self.scroll)
         self._nav("quit", p(14), H - p(18) - p(38), self.sw - p(28), "quit", tr("app_quit"), False, quiet=True)
         self.max_scroll = max(0, y + self.scroll + p(36) - H)
         if self.scroll > self.max_scroll:
@@ -4234,8 +4255,35 @@ class AppWindow:
             if w:
                 x0, y0, x1, y1 = w["rect"]
                 r = w.get("radius", p(8)) + p(3)
-                self.S("outline", 0xFFFFFF, x0 - p(3), y0 - p(3), x1 - x0 + p(6), y1 - y0 + p(6), r, max(1.5, p(2)), 225,
-                       side=w["side"])
+                ring = ("outline", 0xFFFFFF, x0 - p(3), y0 - p(3), x1 - x0 + p(6), y1 - y0 + p(6), r, max(1.5, p(2)), 225)
+                (self.side if w["side"] else self.pin if w.get("pin") else self.content)[0].append(ring)
+
+    def _compose_pin(self, top):
+        """The page's title and its keyboard: above the options in a narrow window, on their right in a wide
+        one. Returns where the options start."""
+        p, (W, H) = self.px, self.size
+        title, sub = {"clock": ("nav_clock", "clock_sub"), "look": ("nav_look", "look_sub"),
+                      "font": ("nav_font", "font_sub")}[self.page]
+        saved, self.content, self._pinning = self.content, self.pin, True
+        try:
+            x1 = W - p(36) if self.wide else self.cx1
+            self.T(tr(title), self.fonts["page"], MenuPainter.TEXT, self.cx0, top, x1, top + p(40))
+            y = top + p(44)
+            sh = self.wrap_h(tr(sub), self.fonts["body"], x1 - self.cx0)
+            self.W(tr(sub), self.fonts["body"], MenuPainter.MUTED, self.cx0, y, x1, y + sh)
+            y += sh + p(20)
+            if self.wide:
+                px0 = self.cx1 + p(28)
+                self._pin_card(px0, W - p(36), y, H - y - p(30))
+                self.pin_rects = [(self.sw, 0, W, y), (px0 - p(14), y, W, H)]
+                band = y
+            else:
+                band = self._pin_card(self.cx0, self.cx1, y, max(p(220), H * 0.38)) + p(18)
+                self.pin_rects = [(self.sw, 0, W, band)]
+        finally:
+            self.content, self._pinning = saved, False
+        self.pin[0][0:0] = [("round", self.BG, l, t, r - l, b - t, 0) for l, t, r, b in self.pin_rects]
+        return band
 
     def _sidebar(self):
         p = self.px
@@ -4260,8 +4308,6 @@ class AppWindow:
     def _page_clock(self, y):
         p, s, x0, x1 = self.px, self.store.s, self.cx0, self.cx1
         d = s["display"]
-        y = self._header(y, tr("nav_clock"), tr("clock_sub"))
-        y = self._preview_card(y) + p(24)
         y = self._label(y, tr("display"))
         modes, gap, th = Tray.MODES, p(10), p(84)
         w = (x1 - x0 - gap * (len(modes) - 1)) / len(modes)
@@ -4346,8 +4392,6 @@ class AppWindow:
     def _page_look(self, y):
         p, s, x0, x1 = self.px, self.store.s, self.cx0, self.cx1
         lo = s["look"]
-        y = self._header(y, tr("nav_look"), tr("look_sub"))
-        y = self._preview_card(y) + p(24)
         y = self._label(y, tr("themes"))
         names, cols, gap, th = list(THEMES), 4, p(10), p(72)
         w = (x1 - x0 - gap * (cols - 1)) / cols
@@ -4506,7 +4550,6 @@ class AppWindow:
         p, s, x0, x1 = self.px, self.store.s, self.cx0, self.cx1
         d = s["display"]
         pad = p(20)
-        y = self._header(y, tr("nav_font"), tr("font_sub"))
         self._card(y, p(64))
         y = self._toggle_row("font_use", y, "font", tr("font_use"), tr("font_use_desc"), d["font"] == "custom") + p(12)
         at, top = len(self.content[0]), y
@@ -4514,22 +4557,11 @@ class AppWindow:
         lw = self.tw(tr("font_digit"), self.fonts["body"]) + p(24)
         self._field_label(tr("font_digit"), y, p(40), x0 + pad + lw)
         self._segmented("fd", x0 + pad + lw, x1 - pad, y, [(str(i), None, str(i)) for i in range(10)], self.font_digit)
-        y += p(40) + p(14)
-        sw_ = min(p(260), (x1 - x0) / 3)
-        self._segmented("fside", x0 + pad, x0 + pad + sw_, y,
-                        [(0, None, tr("font_left")), (1, None, tr("font_right"))], self.font_side)
-        bx = self._button("font:copy", x1 - pad, y + p(3), tr("font_copy"), "secondary")
-        self._button("font:reset", bx - p(10), y + p(3), tr("font_reset"), "quiet")
-        y += p(40) + p(14)
-        hint = tr("font_hint")
-        hh = self.wrap_h(hint, self.painter.f_small, x1 - x0 - 2 * pad)
-        self.W(hint, self.painter.f_small, MenuPainter.MUTED, x0 + pad, y, x1 - pad, y + hh)
-        y += hh + p(14)
-        m = self.model()
-        y += self._keyboard(x0 + pad, y, x1 - x0 - 2 * pad, self.font_frame(), area=set(digit_area(m, self.font_side)))
-        y += p(16)
-        bx = self._button("font:show", x1 - pad, y, tr("show_keyboard"), "primary", icon="light")
-        self._button("font:reset_all", bx - p(10), y, tr("font_reset_all"), "quiet")
+        y += p(40) + p(16)
+        bx = self._button("font:copy", x1 - pad, y, tr("font_copy"), "secondary")
+        self._button("font:reset", bx - p(10), y, tr("font_reset"), "quiet")
+        y += p(34) + p(10)
+        self._button("font:reset_all", x1 - pad, y, tr("font_reset_all"), "quiet")
         y += p(34) + pad
         self._card_behind(at, top, y - top)
         return y
@@ -4658,6 +4690,7 @@ class AppWindow:
             user32.FillRect(mem, byref(wt.RECT(l, t, r, b)), brush)
         gdi32.DeleteObject(brush)
         self._render(page, *self.content, clip=clip)
+        self._render(page, *self.pin, clip=clip)    # title and keyboard, over what scrolled under them
         x0 = max(l, self.sw)
         if r > x0:
             gdi32.BitBlt(side, x0, t, r - x0, b - t, page, x0, t, 0x00CC0020)
@@ -4703,9 +4736,10 @@ class AppWindow:
         return next((w for w in self.widgets if w["id"] == wid), None)
 
     def _hit(self, x, y):
+        in_pin = any(l <= x < r and t <= y < b for l, t, r, b in self.pin_rects)
         for w in self.widgets:
             x0, y0, x1, y1 = w["rect"]
-            if (w["side"] or x >= self.sw) and x0 <= x < x1 and y0 <= y < y1:
+            if x0 <= x < x1 and y0 <= y < y1 and (w["side"] or (x >= self.sw and bool(w.get("pin")) == in_pin)):
                 return w
         return None
 
@@ -4720,7 +4754,6 @@ class AppWindow:
             font.setdefault(ch, [list(base[ch][0]), list(base[ch][1])])
         change(font, m)
         self.store.replace(merge(s, {"display": {"font": "custom", "custom_font": font}}))
-        self._show_font(4)
 
     def _show_font(self, seconds):
         self.clock.show_for(seconds, lambda t: self.font_frame(Model(self.clock.model_name())))
@@ -4809,7 +4842,6 @@ class AppWindow:
                 self._font_edit(lambda font, m: None)
         elif wid.startswith("fd:"):
             self.font_digit = wid[3:]
-            self._show_font(4)
         elif wid.startswith("fside:"):
             self.font_side = int(wid[6:])
         elif wid.startswith("key:"):
@@ -5056,7 +5088,7 @@ class AppWindow:
 
     def _reveal(self, wid):
         w = self._widget(wid)
-        if not w or w["side"]:
+        if not w or w["side"] or w.get("pin"):
             return
         p, H = self.px, self.size[1]
         if w["rect"][1] < p(16):

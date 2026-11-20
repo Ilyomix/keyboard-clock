@@ -55,10 +55,12 @@ class Digits(unittest.TestCase):
                 for k in kc.classic_keys(m, ch, pos):
                     self.assertLess(m.center[k][0], 11, f"{ch} {pos} {k}")
 
-    def test_the_one_is_a_slash(self):
+    def test_the_built_in_digits_are_the_drawn_ones(self):
         m = kc.Model("tkl-iso")
-        self.assertEqual(kc.classic_keys(m, "1", 0), ["F4", "4", "E", "S", "Z"])   # Z = AZERTY W
-        self.assertEqual(kc.classic_keys(m, "1", 1), ["F8", "9", "I", "J", "N"])
+        for ch in "0123456789":
+            for pos in (0, 1):
+                self.assertEqual(kc.classic_keys(m, ch, pos), list(kc.DEFAULT_FONT[ch][pos]), f"{ch} {pos}")
+                self.assertTrue(set(kc.DEFAULT_FONT[ch][pos]) <= set(kc.digit_area(m, pos)), f"{ch} {pos}")
 
 
 class CustomFont(unittest.TestCase):
