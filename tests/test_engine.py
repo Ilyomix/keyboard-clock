@@ -57,7 +57,7 @@ class Digits(unittest.TestCase):
 
     def test_the_one_is_a_slash(self):
         m = kc.Model("tkl-iso")
-        self.assertEqual(kc.classic_keys(m, "1", 0), ["F3", "4", "E", "S", "Z"])   # Z = AZERTY W
+        self.assertEqual(kc.classic_keys(m, "1", 0), ["F4", "4", "E", "S", "Z"])   # Z = AZERTY W
         self.assertEqual(kc.classic_keys(m, "1", 1), ["F8", "9", "I", "J", "N"])
 
 
