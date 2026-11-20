@@ -23,6 +23,7 @@ import json
 import math
 import os
 import re
+import socket
 import struct
 import sys
 import threading
@@ -573,7 +574,7 @@ def clean_settings(raw):
             "brightness": _num(ni.get("brightness"), d["night"]["brightness"], 5, 100),
         },
         "keyboard": {
-            "backend": _choice(kb.get("backend"), ("auto", "logitech"), "auto"),
+            "backend": _choice(kb.get("backend"), ("auto", "logitech", "dynamic", "openrgb"), "auto"),
             "model": _choice(kb.get("model"), ("auto",) + MODELS, "auto"),
         },
         "timer": {
@@ -1111,8 +1112,25 @@ class LogitechBackend:
         self.dll.LogiLedShutdown()
 
 
-def open_backend(settings):
-    return LogitechBackend()
+BACKENDS = ("logitech", "dynamic", "openrgb")
+
+
+def open_backend(settings, model=None):
+    """The keyboard back-end the settings ask for; "auto" tries Logitech G HUB, then Windows Dynamic Lighting,
+    then OpenRGB."""
+    choice = settings["keyboard"]["backend"]
+    model = model or Model(settings["keyboard"]["model"] if settings["keyboard"]["model"] != "auto" else default_model())
+    errors = []
+    for kind in (BACKENDS if choice == "auto" else (choice,)):
+        try:
+            if kind == "logitech":
+                return LogitechBackend()
+            if kind == "dynamic":
+                return LampArrayBackend(model)
+            return OpenRGBBackend(model)
+        except (Unsupported, OSError) as e:
+            errors.append(str(e))
+    raise Unsupported("; ".join(errors) or "no keyboard")
 
 
 # ---------------------------------------------------------------------------
@@ -1337,7 +1355,7 @@ class Clock:
         holding, shown_at, next_try, last_check = False, 0.0, 0.0, -9.0
         locked = full = apps_hit = False
         chime_at = chimed = None
-        hotkey, hotkey_text, seen = None, None, None
+        hotkey, hotkey_text, seen, backend_key = None, None, None, None
         try:
             while True:
                 now = time.monotonic()
@@ -1357,6 +1375,11 @@ class Clock:
                     seen = self.version
                     self.lang = s["lang"] or detect_lang()
                     name = self.model_name(s)
+                    if (s["keyboard"]["backend"], name) != backend_key:     # another keyboard: open it again
+                        if backend and holding:
+                            backend.release()
+                            holding = False
+                        backend, backend_key, next_try = None, (s["keyboard"]["backend"], name), 0.0
                     if renderer is None or name != model_name:
                         model_name, renderer = name, Renderer(Model(name), s, self.lang)
                     else:
@@ -1382,14 +1405,14 @@ class Clock:
                 want = bool(ov) or bool(alarm_view) or bool(timer_view) or (wanted and not hidden)
                 if want and not holding and now >= next_try:
                     try:
-                        backend = backend or open_backend(s)
+                        backend = backend or open_backend(s, renderer.model)
                         holding = backend.open()
                     except (Unsupported, OSError) as e:
                         log(f"Keyboard not available: {e}")
                         holding = False
                     if holding:
                         shown_at, chime_at = now, None
-                        log("Showing on the keyboard" + (" (on demand)" if ov else ""))
+                        log(f"Showing on the keyboard ({backend.name})" + (" on demand" if ov else ""))
                     else:
                         log("G HUB did not hand over the lighting; trying again in a few seconds.")
                         next_try = now + (2 if ov else 10)
@@ -2013,6 +2036,587 @@ class MusicAnalyser:
         self.waves = [w for w in self.waves if now - w[0] < 1.2]
 
 
+# ---- other brands: Windows Dynamic Lighting (HID LampArray) and OpenRGB keyboards (drivers from Glowback)
+setupapi = ctypes.WinDLL("setupapi", use_last_error=True)
+hid = ctypes.WinDLL("hid", use_last_error=True)
+INVALID_HANDLE = ctypes.c_void_p(-1).value
+
+
+class SP_DEVICE_INTERFACE_DATA(ctypes.Structure):
+    _fields_ = [("cbSize", wt.DWORD), ("guid", GUID), ("flags", wt.DWORD), ("res", ctypes.c_void_p)]
+
+
+class HIDD_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [("Size", wt.ULONG), ("VendorID", wt.USHORT), ("ProductID", wt.USHORT), ("Version", wt.USHORT)]
+
+
+class HIDP_CAPS(ctypes.Structure):
+    _fields_ = [("Usage", wt.USHORT), ("UsagePage", wt.USHORT), ("InLen", wt.USHORT),
+                ("OutLen", wt.USHORT), ("FeatLen", wt.USHORT), ("Reserved", wt.USHORT * 17),
+                ("Counts", wt.USHORT * 10)]  # Counts[8] = NumberFeatureValueCaps
+
+
+class HIDP_VALUE_CAPS(ctypes.Structure):
+    _fields_ = [("UsagePage", wt.USHORT), ("ReportID", ctypes.c_ubyte), ("IsAlias", ctypes.c_ubyte),
+                ("BitField", wt.USHORT), ("LinkCollection", wt.USHORT), ("LinkUsage", wt.USHORT),
+                ("LinkUsagePage", wt.USHORT), ("IsRange", ctypes.c_ubyte), ("IsStringRange", ctypes.c_ubyte),
+                ("IsDesignatorRange", ctypes.c_ubyte), ("IsAbsolute", ctypes.c_ubyte), ("HasNull", ctypes.c_ubyte),
+                ("Reserved", ctypes.c_ubyte), ("BitSize", wt.USHORT), ("ReportCount", wt.USHORT),
+                ("Reserved2", wt.USHORT * 5), ("UnitsExp", wt.ULONG), ("Units", wt.ULONG),
+                ("LogicalMin", wt.LONG), ("LogicalMax", wt.LONG), ("PhysicalMin", wt.LONG), ("PhysicalMax", wt.LONG),
+                ("UsageMin", wt.USHORT), ("UsageMax", wt.USHORT), ("StringMin", wt.USHORT), ("StringMax", wt.USHORT),
+                ("DesignatorMin", wt.USHORT), ("DesignatorMax", wt.USHORT),
+                ("DataIndexMin", wt.USHORT), ("DataIndexMax", wt.USHORT)]
+
+
+class HIDP_DATA(ctypes.Structure):
+    _fields_ = [("DataIndex", wt.USHORT), ("Reserved", wt.USHORT), ("RawValue", wt.ULONG)]
+
+_sig(k32.CreateFileW, HANDLE, wt.LPCWSTR, wt.DWORD, wt.DWORD, ctypes.c_void_p, wt.DWORD, wt.DWORD, HANDLE)
+_sig(setupapi.SetupDiGetClassDevsW, HANDLE, ctypes.POINTER(GUID), wt.LPCWSTR, HANDLE, wt.DWORD)
+_sig(setupapi.SetupDiEnumDeviceInterfaces, wt.BOOL, HANDLE, ctypes.c_void_p, ctypes.POINTER(GUID),
+     wt.DWORD, ctypes.POINTER(SP_DEVICE_INTERFACE_DATA))
+_sig(setupapi.SetupDiGetDeviceInterfaceDetailW, wt.BOOL, HANDLE, ctypes.POINTER(SP_DEVICE_INTERFACE_DATA),
+     ctypes.c_void_p, wt.DWORD, ctypes.POINTER(wt.DWORD), ctypes.c_void_p)
+_sig(setupapi.SetupDiDestroyDeviceInfoList, wt.BOOL, HANDLE)
+_sig(hid.HidD_GetHidGuid, None, ctypes.POINTER(GUID))
+_sig(hid.HidD_GetAttributes, wt.BOOLEAN, HANDLE, ctypes.POINTER(HIDD_ATTRIBUTES))
+_sig(hid.HidD_GetProductString, wt.BOOLEAN, HANDLE, ctypes.c_void_p, wt.ULONG)
+_sig(hid.HidD_GetPreparsedData, wt.BOOLEAN, HANDLE, ctypes.POINTER(ctypes.c_void_p))
+_sig(hid.HidD_FreePreparsedData, wt.BOOLEAN, ctypes.c_void_p)
+_sig(hid.HidD_GetFeature, wt.BOOLEAN, HANDLE, ctypes.c_void_p, wt.ULONG)
+_sig(hid.HidD_SetFeature, wt.BOOLEAN, HANDLE, ctypes.c_void_p, wt.ULONG)
+_sig(hid.HidP_GetCaps, wt.LONG, ctypes.c_void_p, ctypes.POINTER(HIDP_CAPS))
+_sig(hid.HidP_GetValueCaps, wt.LONG, ctypes.c_int, ctypes.POINTER(HIDP_VALUE_CAPS),
+     ctypes.POINTER(wt.USHORT), ctypes.c_void_p)
+_sig(hid.HidP_GetUsageValue, wt.LONG, ctypes.c_int, wt.USHORT, wt.USHORT, wt.USHORT,
+     ctypes.POINTER(wt.ULONG), ctypes.c_void_p, ctypes.c_void_p, wt.ULONG)
+_sig(hid.HidP_InitializeReportForID, wt.LONG, ctypes.c_int, ctypes.c_ubyte, ctypes.c_void_p,
+     ctypes.c_void_p, wt.ULONG)
+_sig(hid.HidP_SetData, wt.LONG, ctypes.c_int, ctypes.POINTER(HIDP_DATA), ctypes.POINTER(wt.ULONG),
+     ctypes.c_void_p, ctypes.c_void_p, wt.ULONG)
+_sig(hid.HidP_SetUsageValueArray, wt.LONG, ctypes.c_int, wt.USHORT, wt.USHORT, wt.USHORT,
+     ctypes.c_void_p, wt.USHORT, ctypes.c_void_p, ctypes.c_void_p, wt.ULONG)
+
+HIDP_FEATURE = 2
+HIDP_OK = 0x00110000
+PAGE = 0x59  # HID Usage Page "Lighting And Illumination"
+# LampArray collections (HID Usage Tables 1.4, chapter 25)
+C_ATTRS, C_REQ, C_RESP, C_MULTI, C_RANGE, C_CTRL = 0x02, 0x20, 0x22, 0x50, 0x60, 0x70
+U_COUNT, U_KIND, U_MIN_INTERVAL = 0x03, 0x07, 0x08
+U_WIDTH, U_HEIGHT = 0x04, 0x05
+U_ID, U_X, U_Y, U_Z, U_INT_LEVELS = 0x21, 0x23, 0x24, 0x25, 0x2B
+U_R, U_G, U_B, U_I, U_FLAGS, U_START, U_END, U_AUTO = 0x51, 0x52, 0x53, 0x54, 0x55, 0x61, 0x62, 0x71
+KINDS = {0: "undefined", 1: "keyboard", 2: "mouse", 3: "game controller", 4: "peripheral", 5: "scene",
+         6: "notification", 7: "chassis", 8: "wearable", 9: "furniture", 10: "art"}
+U_BINDING = 0x2D          # LampArray InputBinding: the keyboard usage of the key above a lamp
+USAGE_KEY = {hid_: name for name, (hid_, _) in KEY_CODES.items()}
+
+
+def _ok(status):
+    return (status & 0xFFFFFFFF) == HIDP_OK
+
+
+def enumerate_lamparrays():
+    """Yield (path, product name, vid, pid) for every HID LampArray interface."""
+    guid = GUID()
+    hid.HidD_GetHidGuid(byref(guid))
+    hset = setupapi.SetupDiGetClassDevsW(byref(guid), None, None, 0x12)  # PRESENT | DEVICEINTERFACE
+    found = []
+    try:
+        i = 0
+        while True:
+            data = SP_DEVICE_INTERFACE_DATA()
+            data.cbSize = sizeof(data)
+            if not setupapi.SetupDiEnumDeviceInterfaces(hset, None, byref(guid), i, byref(data)):
+                break
+            i += 1
+            need = wt.DWORD()
+            setupapi.SetupDiGetDeviceInterfaceDetailW(hset, byref(data), None, 0, byref(need), None)
+            buf = ctypes.create_string_buffer(need.value)
+            ctypes.cast(buf, ctypes.POINTER(wt.DWORD))[0] = 8 if sizeof(ctypes.c_void_p) == 8 else 6
+            if not setupapi.SetupDiGetDeviceInterfaceDetailW(hset, byref(data), buf, need, None, None):
+                continue
+            path = ctypes.wstring_at(ctypes.addressof(buf) + 4)
+            h = k32.CreateFileW(path, 0, 3, None, 3, 0, None)  # query-only handle
+            if h in (None, INVALID_HANDLE):
+                continue
+            try:
+                pp = ctypes.c_void_p()
+                if not hid.HidD_GetPreparsedData(h, byref(pp)):
+                    continue
+                caps = HIDP_CAPS()
+                hid.HidP_GetCaps(pp, byref(caps))
+                hid.HidD_FreePreparsedData(pp)
+                if caps.UsagePage != PAGE or caps.Usage != 0x01:
+                    continue
+                attrs = HIDD_ATTRIBUTES()
+                attrs.Size = sizeof(attrs)
+                hid.HidD_GetAttributes(h, byref(attrs))
+                name = ctypes.create_unicode_buffer(256)
+                hid.HidD_GetProductString(h, name, sizeof(name))
+                found.append((path, name.value or "LampArray", attrs.VendorID, attrs.ProductID))
+            finally:
+                k32.CloseHandle(h)
+    finally:
+        setupapi.SetupDiDestroyDeviceInfoList(hset)
+    return found
+
+
+class Lamp:
+    __slots__ = ("id", "x", "y", "z", "key")
+
+    def __init__(self, lamp_id, x, y, z, key=0):
+        self.id, self.x, self.y, self.z, self.key = lamp_id, x, y, z, key
+
+
+class LampArray:
+    """A HID LampArray. Report layout is discovered from the HID descriptor."""
+
+    def __init__(self, path, name="LampArray", vid=0, pid=0):
+        self.path, self.name, self.vid, self.pid = path, name, vid, pid
+        self.pp = None
+        self.h = k32.CreateFileW(path, 0xC0000000, 3, None, 3, 0, None)  # read/write, shared
+        if self.h in (None, INVALID_HANDLE):
+            self.h = None
+            raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            self.pp = ctypes.c_void_p()
+            if not hid.HidD_GetPreparsedData(self.h, byref(self.pp)):
+                raise Unsupported("cannot read HID descriptor")
+            caps = HIDP_CAPS()
+            hid.HidP_GetCaps(self.pp, byref(caps))
+            self.flen = caps.FeatLen
+            self._discover(caps.Counts[8])
+            self._read_attributes()
+        except Exception:
+            self.close()
+            raise
+
+    # ---- descriptor parsing ----------------------------------------------
+    def _discover(self, n_caps):
+        n = wt.USHORT(n_caps)
+        vc = (HIDP_VALUE_CAPS * max(1, n_caps))()
+        hid.HidP_GetValueCaps(HIDP_FEATURE, vc, byref(n), self.pp)
+        self.rid, self.link, fields = {}, {}, {}
+        for c in vc[:n.value]:
+            if c.UsagePage != PAGE:
+                continue
+            self.rid.setdefault(c.LinkUsage, c.ReportID)
+            self.link.setdefault(c.LinkUsage, c.LinkCollection)
+            if c.IsRange:
+                for k, u in enumerate(range(c.UsageMin, c.UsageMax + 1)):
+                    fields.setdefault(c.LinkUsage, []).append((c.DataIndexMin + k, u, c.BitSize, 1, c.LinkCollection))
+            else:
+                fields.setdefault(c.LinkUsage, []).append((c.DataIndexMin, c.UsageMin, c.BitSize, c.ReportCount, c.LinkCollection))
+        missing = [hex(cu) for cu in (C_ATTRS, C_REQ, C_RESP, C_MULTI, C_RANGE, C_CTRL) if cu not in self.rid]
+        if missing:
+            raise Unsupported(f"incomplete LampArray descriptor (missing {', '.join(missing)})")
+        self.tpl = {cu: self._blank(self.rid[cu]) for cu in self.rid}
+
+        def locate(cu, usage):
+            """(offset, size) of each occurrence of `usage` in collection `cu`, sorted by byte position."""
+            slots = []
+            for di, u, bits, count, link in fields.get(cu, []):
+                if u != usage:
+                    continue
+                if bits % 8:
+                    raise Unsupported("non byte-aligned LampArray field")
+                size = bits // 8
+                buf = bytearray(self.tpl[cu])
+                arr = (ctypes.c_ubyte * self.flen).from_buffer(buf)
+                if count == 1:
+                    d = HIDP_DATA(di, 0, (1 << bits) - 1)
+                    ln = wt.ULONG(1)
+                    st = hid.HidP_SetData(HIDP_FEATURE, byref(d), byref(ln), self.pp, arr, self.flen)
+                else:
+                    ones = (ctypes.c_ubyte * (size * count))(*([0xFF] * (size * count)))
+                    st = hid.HidP_SetUsageValueArray(HIDP_FEATURE, PAGE, link, u, ones, size * count,
+                                                     self.pp, arr, self.flen)
+                if not _ok(st):
+                    raise Unsupported(f"cannot map usage {u:#x} ({st & 0xFFFFFFFF:#x})")
+                off = next(i for i in range(self.flen) if buf[i] != self.tpl[cu][i])
+                slots.extend((off + k * size, size) for k in range(count))
+            if not slots:
+                raise Unsupported(f"usage {usage:#x} not found in collection {cu:#x}")
+            return sorted(slots)
+
+        self.m_count = locate(C_MULTI, U_COUNT)[0]
+        self.m_flags = locate(C_MULTI, U_FLAGS)[0]
+        self.m_ids = locate(C_MULTI, U_ID)
+        self.m_rgbi = [locate(C_MULTI, u) for u in (U_R, U_G, U_B, U_I)]
+        self.batch = min(len(self.m_ids), *(len(ch) for ch in self.m_rgbi))
+        self.r_flags = locate(C_RANGE, U_FLAGS)[0]
+        self.r_start = locate(C_RANGE, U_START)[0]
+        self.r_end = locate(C_RANGE, U_END)[0]
+        self.r_rgbi = [locate(C_RANGE, u)[0] for u in (U_R, U_G, U_B, U_I)]
+        self.c_auto = locate(C_CTRL, U_AUTO)[0]
+        self.q_id = locate(C_REQ, U_ID)[0]
+
+    def _blank(self, rid):
+        b = (ctypes.c_ubyte * self.flen)()
+        st = hid.HidP_InitializeReportForID(HIDP_FEATURE, rid, self.pp, b, self.flen)
+        if not _ok(st):
+            b = (ctypes.c_ubyte * self.flen)()
+            b[0] = rid
+        return bytes(b)
+
+    # ---- low level I/O -----------------------------------------------------
+    def _get(self, cu):
+        b = (ctypes.c_ubyte * self.flen).from_buffer_copy(self.tpl[cu])
+        if not hid.HidD_GetFeature(self.h, b, self.flen):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return b
+
+    def _val(self, report, cu, usage, default=0):
+        v = wt.ULONG()
+        st = hid.HidP_GetUsageValue(HIDP_FEATURE, PAGE, self.link[cu], usage, byref(v), self.pp, report, self.flen)
+        return v.value if _ok(st) else default
+
+    def _send(self, buf):
+        arr = (ctypes.c_ubyte * self.flen).from_buffer(buf)
+        if not hid.HidD_SetFeature(self.h, arr, self.flen):
+            raise ctypes.WinError(ctypes.get_last_error())
+
+    @staticmethod
+    def _put(buf, field, value):
+        off, size = field
+        buf[off:off + size] = int(value).to_bytes(size, "little")
+
+    def _read_attributes(self):
+        a = self._get(C_ATTRS)
+        count = self._val(a, C_ATTRS, U_COUNT)
+        self.kind = self._val(a, C_ATTRS, U_KIND)
+        self.width_mm = self._val(a, C_ATTRS, U_WIDTH) / 1000
+        self.height_mm = self._val(a, C_ATTRS, U_HEIGHT) / 1000
+        self.min_interval = self._val(a, C_ATTRS, U_MIN_INTERVAL) / 1e6
+        self.lamps, self.intensity = [], 1
+        for i in range(count):
+            q = bytearray(self.tpl[C_REQ])
+            self._put(q, self.q_id, i)
+            self._send(q)
+            r = self._get(C_RESP)
+            self.lamps.append(Lamp(self._val(r, C_RESP, U_ID, i), self._val(r, C_RESP, U_X),
+                                   self._val(r, C_RESP, U_Y), self._val(r, C_RESP, U_Z),
+                                   self._val(r, C_RESP, U_BINDING, 0)))     # the key above the lamp (HID usage)
+            self.intensity = max(self.intensity, self._val(r, C_RESP, U_INT_LEVELS, 1))
+        if not self.lamps:
+            raise Unsupported("device reports 0 lamps")
+
+    # ---- public API ---------------------------------------------------------
+    def set_autonomous(self, on):
+        b = bytearray(self.tpl[C_CTRL])
+        self._put(b, self.c_auto, 1 if on else 0)
+        self._send(b)
+
+    def send_all(self, rgb):
+        b = bytearray(self.tpl[C_RANGE])
+        self._put(b, self.r_flags, 1)
+        self._put(b, self.r_start, 0)
+        self._put(b, self.r_end, len(self.lamps) - 1)
+        for f, v in zip(self.r_rgbi, (*rgb, self.intensity)):
+            b[f[0]] = v
+        self._send(b)
+
+    def send(self, colors):
+        """colors: one (r, g, b) per lamp, same order as self.lamps."""
+        n, step = len(colors), self.batch
+        for start in range(0, n, step):
+            chunk = colors[start:start + step]
+            b = bytearray(self.tpl[C_MULTI])
+            self._put(b, self.m_count, len(chunk))
+            self._put(b, self.m_flags, 1 if start + step >= n else 0)  # LampUpdateComplete
+            r_, g_, b_, i_ = self.m_rgbi
+            for k, (r, g, bl) in enumerate(chunk):
+                self._put(b, self.m_ids[k], self.lamps[start + k].id)
+                b[r_[k][0]] = r
+                b[g_[k][0]] = g
+                b[b_[k][0]] = bl
+                b[i_[k][0]] = self.intensity
+            self._send(b)
+
+    def close(self):
+        if self.pp:
+            hid.HidD_FreePreparsedData(self.pp)
+            self.pp = None
+        if self.h:
+            k32.CloseHandle(self.h)
+            self.h = None
+
+
+def dynamic_lighting_enabled(path):
+    """True if Windows Dynamic Lighting is also driving this device (they would fight)."""
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Lighting") as k:
+            if winreg.QueryValueEx(k, "AmbientLightingEnabled")[0] == 0:
+                return False
+        key = path[4:] if path.startswith("\\\\?\\") else path
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Lighting\Devices") as k:
+            i = 0
+            while True:
+                sub = winreg.EnumKey(k, i)
+                i += 1
+                if sub.lower() == key.lower():
+                    with winreg.OpenKey(k, sub) as d:
+                        return winreg.QueryValueEx(d, "AmbientLightingEnabled")[0] != 0
+    except OSError:
+        return None
+
+
+class _Reader:
+    def __init__(self, data):
+        self.d, self.i = data, 0
+
+    def take(self, fmt):
+        v = struct.unpack_from("<" + fmt, self.d, self.i)
+        self.i += struct.calcsize("<" + fmt)
+        return v[0]
+
+    def string(self):
+        n = self.take("H")
+        s = self.d[self.i:self.i + n]
+        self.i += n
+        return s.rstrip(b"\0").decode("utf-8", "replace")
+
+
+def parse_orgb_controller(data, version):
+    """Name, type, modes (raw bytes, to restore the user's effect) and zones of an OpenRGB controller."""
+    r = _Reader(data)
+    r.take("I")  # data size
+    dtype = r.take("i")
+    name = r.string()
+    for _ in range(5 if version >= 1 else 4):  # vendor (v1+), description, version, serial, location
+        r.string()
+    n_modes, active = r.take("H"), r.take("i")
+    modes = []
+    for _ in range(n_modes):
+        start = r.i
+        r.string()
+        r.i += 4 * (9 + (3 if version >= 3 else 0))  # value, flags, speed/(brightness)/colors fields, direction, color mode
+        n_colors = r.take("H")
+        r.i += 4 * n_colors
+        modes.append(bytes(data[start:r.i]))
+    zones = []
+    for _ in range(r.take("H")):
+        r.string()
+        ztype = r.take("i")
+        r.take("I"), r.take("I")                                  # min and max LED count
+        n_leds, msize = r.take("I"), r.take("H")
+        matrix = None
+        if msize > 0:
+            h, w = r.take("I"), r.take("I")
+            matrix = (h, w, struct.unpack_from(f"<{h * w}I", data, r.i))
+            r.i += 4 * h * w
+        if version >= 4:
+            for _ in range(r.take("H")):  # segments
+                r.string()
+                r.i += 12
+        zones.append((ztype, n_leds, matrix))
+    n_leds = r.take("H")
+    names = []
+    try:
+        for _ in range(n_leds):                                   # LED names, e.g. "Key: F1"
+            names.append(r.string())
+            r.take("I")
+    except struct.error:
+        names = []
+    return {"type": dtype, "name": name, "modes": modes, "active": active, "zones": zones, "leds": n_leds,
+            "led_names": names}
+
+
+class OpenRGBClient:
+    def __init__(self, address, connect_timeout=2.0):
+        host, _, port = address.partition(":")
+        self.address = f"{host or '127.0.0.1'}:{port or 6742}"
+        self.sock = socket.create_connection((host or "127.0.0.1", int(port or 6742)), timeout=connect_timeout)
+        self.version = 0
+        self.send(0, 40, struct.pack("<I", 4))  # REQUEST_PROTOCOL_VERSION
+        try:
+            self.sock.settimeout(1)
+            self.version = min(4, struct.unpack("<I", self.recv(0, 40)[:4])[0])
+        except socket.timeout:
+            self.version = 0  # very old server: no reply
+        self.sock.settimeout(3)
+        self.send(0, 50, b"Keyboard Clock\0")  # SET_CLIENT_NAME
+
+    def send(self, dev, pkt, payload=b""):
+        self.sock.sendall(b"ORGB" + struct.pack("<III", dev, pkt, len(payload)) + payload)
+
+    def _exact(self, n):
+        buf = b""
+        while len(buf) < n:
+            chunk = self.sock.recv(n - len(buf))
+            if not chunk:
+                raise OSError("OpenRGB closed the connection")
+            buf += chunk
+        return buf
+
+    def recv(self, dev, pkt):
+        """Next reply of type `pkt` for `dev`, skipping notifications (e.g. device list updated)."""
+        while True:
+            hdr = self._exact(16)
+            if hdr[:4] != b"ORGB":
+                raise OSError("unexpected data from OpenRGB")
+            d, p, size = struct.unpack("<III", hdr[4:])
+            data = self._exact(size)
+            if d == dev and p == pkt:
+                return data
+
+    def controllers(self):
+        self.send(0, 0)  # REQUEST_CONTROLLER_COUNT
+        count = struct.unpack("<I", self.recv(0, 0)[:4])[0]
+        out = []
+        for idx in range(count):
+            self.send(idx, 1, struct.pack("<I", self.version) if self.version else b"")  # REQUEST_CONTROLLER_DATA
+            out.append((idx, parse_orgb_controller(self.recv(idx, 1), self.version)))
+        return out
+
+    def close(self):
+        try:
+            self.sock.close()
+        except OSError:
+            pass
+
+
+ORGB_KEYBOARD = 5
+ORGB_KEYS = {"escape": "Esc", "`": "`", "backspace": "Backspace", "tab": "Tab", "caps lock": "Caps", "enter": "Enter",
+             "left shift": "LShift", "right shift": "RShift", "left control": "LCtrl", "left windows": "LWin",
+             "left alt": "LAlt", "space": "Space", "right alt": "RAlt", "right windows": "RWin", "menu": "Menu",
+             "right control": "RCtrl", "print screen": "PrtSc", "scroll lock": "ScrLk", "pause/break": "Pause",
+             "insert": "Ins", "home": "Home", "page up": "PgUp", "delete": "Del", "end": "End", "page down": "PgDn",
+             "up arrow": "Up", "left arrow": "Left", "down arrow": "Down", "right arrow": "Right",
+             "num lock": "NumLock", "number pad /": "KP/", "number pad *": "KP*", "number pad -": "KP-",
+             "number pad +": "KP+", "number pad enter": "KPEnter", "number pad .": "KP.", "-": "-", "=": "=",
+             "[": "[", "]": "]", "\\ (ansi)": "\\", "\\ (iso)": "<", "#": "#", ";": ";", "'": "'", ",": ",",
+             ".": ".", "/": "/"}
+ORGB_KEYS.update({f"f{i}": f"F{i}" for i in range(1, 13)})
+ORGB_KEYS.update({c.lower(): c for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"})
+ORGB_KEYS.update({f"number pad {i}": f"KP{i}" for i in range(10)})
+
+
+def orgb_key(name):
+    """OpenRGB LED name ("Key: F1") -> our key name, or None."""
+    n = name.strip()
+    n = n[4:].strip() if n.lower().startswith("key:") else n
+    return ORGB_KEYS.get(n.lower())
+
+
+def lamp_key_map(lamps, model):
+    """The key under each lamp: from the lamp's own key binding when the keyboard gives it, else from its
+    position, matched to the nearest key of the layout."""
+    keys = [USAGE_KEY.get(lamp.key) for lamp in lamps]
+    if sum(k is not None for k in keys) >= len(lamps) * 0.5:
+        return keys
+    xs, ys = [lamp.x for lamp in lamps], [lamp.y for lamp in lamps]
+    x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+    cx = {k: c for k, c in model.center.items()}
+    kx0, kx1 = min(c[0] for c in cx.values()), max(c[0] for c in cx.values())
+    ky0, ky1 = min(c[1] for c in cx.values()), max(c[1] for c in cx.values())
+    out = []
+    for lamp in lamps:
+        u = kx0 + (lamp.x - x0) / max(1, x1 - x0) * (kx1 - kx0)
+        v = ky0 + (lamp.y - y0) / max(1, y1 - y0) * (ky1 - ky0)
+        k, d = min(((k, (c[0] - u) ** 2 + (c[1] - v) ** 2) for k, c in cx.items()), key=lambda t: t[1])
+        out.append(k if d < 0.8 else None)
+    return out
+
+
+class LampArrayBackend:
+    """A keyboard that Windows Dynamic Lighting can drive (Razer, Corsair, ASUS, SteelSeries, HyperX…)."""
+    name = "Windows Dynamic Lighting"
+
+    def __init__(self, model, path=None):
+        self.dev = None
+        for p_, name, vid, pid in enumerate_lamparrays():
+            if path and p_ != path:
+                continue
+            try:
+                dev = LampArray(p_, name, vid, pid)
+            except (Unsupported, OSError):
+                continue
+            if dev.kind == 1:                                     # LampArrayKindKeyboard
+                self.dev = dev
+                break
+            dev.close()
+        if not self.dev:
+            raise Unsupported("no Dynamic Lighting keyboard found")
+        self.device_name = self.dev.name
+        self.keys = lamp_key_map(self.dev.lamps, model)
+        self.last = None
+
+    def open(self):
+        self.dev.set_autonomous(False)
+        self.last = None
+        return True
+
+    def send(self, frame):
+        colors = [frame.get(k, (0, 0, 0)) if k else (0, 0, 0) for k in self.keys]
+        if colors != self.last:
+            self.dev.send(colors)
+            self.last = colors
+
+    def release(self):
+        self.dev.set_autonomous(True)                             # the keyboard's own effect comes back
+
+
+class OpenRGBBackend:
+    """A keyboard that OpenRGB drives (its SDK server must be running)."""
+    name = "OpenRGB"
+
+    def __init__(self, model, address="127.0.0.1:6742"):
+        try:
+            self.client = OpenRGBClient(address, connect_timeout=0.4)
+        except OSError as e:
+            raise Unsupported(f"OpenRGB is not running ({e})") from e
+        found = [(i, info) for i, info in self.client.controllers() if info["type"] == ORGB_KEYBOARD]
+        if not found:
+            self.client.close()
+            raise Unsupported("OpenRGB sees no keyboard")
+        self.idx, info = found[0]
+        self.device_name = info["name"]
+        self.keys = [orgb_key(n) for n in info["led_names"]] or [None] * info["leds"]
+        a = info["active"]
+        self.restore = (a, info["modes"][a]) if 0 <= a < len(info["modes"]) else None
+        self.last = None
+
+    def open(self):
+        self.client.send(self.idx, 1100)                          # SETCUSTOMMODE: direct control
+        self.last = None
+        return True
+
+    def send(self, frame):
+        colors = [frame.get(k, (0, 0, 0)) if k else (0, 0, 0) for k in self.keys]
+        if colors != self.last:
+            body = struct.pack("<H", len(colors)) + b"".join(bytes((r, g, b, 0)) for r, g, b in colors)
+            self.client.send(self.idx, 1050, struct.pack("<I", 4 + len(body)) + body)   # UPDATELEDS
+            self.last = colors
+
+    def release(self):
+        if self.restore:                                          # UPDATEMODE: the user's own effect
+            mode_idx, raw = self.restore
+            self.client.send(self.idx, 1101, struct.pack("<Ii", 8 + len(raw), mode_idx) + raw)
+
+
+def find_keyboards(model):
+    """What each back-end sees, for the Keyboard page: [(backend, device name or None, keys matched, note)]."""
+    out = [("logitech", "Logitech G HUB" if logitech_dll() else None, None, None)]
+    try:
+        b = LampArrayBackend(model)
+        note = "dynamic_on" if dynamic_lighting_enabled(b.dev.path) else None
+        out.append(("dynamic", b.device_name, sum(k is not None for k in b.keys), note))
+        b.dev.close()
+    except (Unsupported, OSError):
+        out.append(("dynamic", None, None, None))
+    try:
+        b = OpenRGBBackend(model)
+        out.append(("openrgb", b.device_name, sum(k is not None for k in b.keys), None))
+        b.client.close()
+    except (Unsupported, OSError):
+        out.append(("openrgb", None, None, None))
+    return out
+
+
 # ---- texts
 STRINGS = {
     "en": {
@@ -2083,9 +2687,7 @@ STRINGS = {
         "model_tkl-ansi": "Tenkeyless, ANSI (US)", "model_full-iso": "Full size, ISO (Europe)",
         "model_full-ansi": "Full size, ANSI (US)",
         "kb_test": "Test my keyboard", "kb_test_desc": "Shows 0 to 9 on both sides",
-        "kb_test_button": "Test", "kb_more": "Other brands",
-        "kb_more_desc": "Windows Dynamic Lighting and OpenRGB keyboards are coming.",
-        "settings_sub": "Startup, updates and language.",
+        "kb_test_button": "Test", "settings_sub": "Startup, updates and language.",
         "settings_start_desc": "Runs in the background, next to the clock", "settings_updates": "Updates",
         "settings_new": "Version {version} is available", "settings_check_now": "Check now",
         "settings_check_desc": "Once a day, from GitHub", "settings_lang": "Language",
@@ -2114,6 +2716,20 @@ STRINGS = {
         "music_desc": "The other keys follow the sound your PC plays. It is analysed live, never recorded.",
         "music_sens": "Sensitivity",
         "startup_store_desc": "Turn Keyboard Clock on or off in Windows' startup apps",
+        "kb_backend": "Keyboard used",
+        "kb_backend_desc": "Automatic tries Logitech G HUB, then the others",
+        "backend_auto": "Automatic",
+        "backend_logitech": "Logitech G HUB",
+        "backend_dynamic": "Windows Dynamic Lighting (beta)",
+        "backend_openrgb": "OpenRGB (beta)",
+        "kb_found_title": "Keyboards found",
+        "kb_scan": "Search again",
+        "kb_none": "Not found",
+        "kb_keys": "{name} · {n} keys",
+        "kb_ghub_found": "Installed",
+        "kb_dynamic_desc": "Razer, Corsair, ASUS, SteelSeries, HyperX, Logitech…",
+        "kb_openrgb_desc": "Needs OpenRGB running with its SDK server",
+        "kb_dynamic_on": "Windows Dynamic Lighting also drives this keyboard: turn it off for this keyboard in Settings > Personalization > Dynamic Lighting, or both will fight over the keys.",
     },
     "fr": {
         "status_showing": "Affichée sur le clavier", "status_waiting": "S'affiche après {delay} d'inactivité",
@@ -2187,8 +2803,6 @@ STRINGS = {
         "model_tkl-ansi": "Sans pavé numérique, ANSI (US)", "model_full-iso": "Complet, ISO (Europe)",
         "model_full-ansi": "Complet, ANSI (US)",
         "kb_test": "Tester mon clavier", "kb_test_desc": "Affiche 0 à 9 des deux côtés", "kb_test_button": "Tester",
-        "kb_more": "Autres marques",
-        "kb_more_desc": "Les claviers Éclairage dynamique de Windows et OpenRGB arrivent bientôt.",
         "settings_sub": "Démarrage, mises à jour et langue.",
         "settings_start_desc": "Tourne en arrière-plan, près de l'horloge", "settings_updates": "Mises à jour",
         "settings_new": "La version {version} est disponible", "settings_check_now": "Vérifier",
@@ -2220,6 +2834,20 @@ STRINGS = {
         "music_desc": "Les autres touches suivent le son de votre PC. Il est analysé en direct, jamais enregistré.",
         "music_sens": "Sensibilité",
         "startup_store_desc": "Activez ou désactivez Keyboard Clock dans les applications de démarrage de Windows",
+        "kb_backend": "Clavier utilisé",
+        "kb_backend_desc": "Automatique essaie Logitech G HUB, puis les autres",
+        "backend_auto": "Automatique",
+        "backend_logitech": "Logitech G HUB",
+        "backend_dynamic": "Éclairage dynamique Windows (bêta)",
+        "backend_openrgb": "OpenRGB (bêta)",
+        "kb_found_title": "Claviers détectés",
+        "kb_scan": "Rechercher",
+        "kb_none": "Introuvable",
+        "kb_keys": "{name} · {n} touches",
+        "kb_ghub_found": "Installé",
+        "kb_dynamic_desc": "Razer, Corsair, ASUS, SteelSeries, HyperX, Logitech…",
+        "kb_openrgb_desc": "OpenRGB doit tourner avec son serveur SDK",
+        "kb_dynamic_on": "L'Éclairage dynamique de Windows pilote aussi ce clavier : désactivez-le pour ce clavier dans Paramètres > Personnalisation > Éclairage dynamique, sinon les deux se disputent les touches.",
     },
     "es": {
         "status_showing": "Ahora en el teclado", "status_waiting": "Aparece tras {delay} sin actividad",
@@ -2292,9 +2920,7 @@ STRINGS = {
         "model_tkl-iso": "Sin teclado numérico, ISO (Europa)", "model_tkl-ansi": "Sin teclado numérico, ANSI (EE. UU.)",
         "model_full-iso": "Completo, ISO (Europa)", "model_full-ansi": "Completo, ANSI (EE. UU.)",
         "kb_test": "Probar mi teclado", "kb_test_desc": "Muestra del 0 al 9 en ambos lados",
-        "kb_test_button": "Probar", "kb_more": "Otras marcas",
-        "kb_more_desc": "Pronto llegarán los teclados con Iluminación dinámica de Windows y OpenRGB.",
-        "settings_sub": "Inicio, actualizaciones e idioma.",
+        "kb_test_button": "Probar", "settings_sub": "Inicio, actualizaciones e idioma.",
         "settings_start_desc": "Funciona en segundo plano, junto al reloj", "settings_updates": "Actualizaciones",
         "settings_new": "La versión {version} está disponible", "settings_check_now": "Buscar",
         "settings_check_desc": "Una vez al día, desde GitHub", "settings_lang": "Idioma",
@@ -2325,6 +2951,20 @@ STRINGS = {
         "music_desc": "Las demás teclas siguen el sonido de tu PC. Se analiza en directo, nunca se graba.",
         "music_sens": "Sensibilidad",
         "startup_store_desc": "Activa o desactiva Keyboard Clock en las aplicaciones de inicio de Windows",
+        "kb_backend": "Teclado usado",
+        "kb_backend_desc": "Automático prueba Logitech G HUB y luego los demás",
+        "backend_auto": "Automático",
+        "backend_logitech": "Logitech G HUB",
+        "backend_dynamic": "Iluminación dinámica de Windows (beta)",
+        "backend_openrgb": "OpenRGB (beta)",
+        "kb_found_title": "Teclados detectados",
+        "kb_scan": "Buscar de nuevo",
+        "kb_none": "No encontrado",
+        "kb_keys": "{name} · {n} teclas",
+        "kb_ghub_found": "Instalado",
+        "kb_dynamic_desc": "Razer, Corsair, ASUS, SteelSeries, HyperX, Logitech…",
+        "kb_openrgb_desc": "Necesita OpenRGB en marcha con su servidor SDK",
+        "kb_dynamic_on": "La Iluminación dinámica de Windows también controla este teclado: desactívala para este teclado en Configuración > Personalización > Iluminación dinámica, o ambos se disputarán las teclas.",
     },
     "de": {
         "status_showing": "Gerade auf der Tastatur", "status_waiting": "Erscheint nach {delay} ohne Eingabe",
@@ -2400,9 +3040,7 @@ STRINGS = {
         "model_tkl-iso": "Ohne Ziffernblock, ISO (Europa)", "model_tkl-ansi": "Ohne Ziffernblock, ANSI (USA)",
         "model_full-iso": "Volle Größe, ISO (Europa)", "model_full-ansi": "Volle Größe, ANSI (USA)",
         "kb_test": "Meine Tastatur testen", "kb_test_desc": "Zeigt 0 bis 9 auf beiden Seiten",
-        "kb_test_button": "Testen", "kb_more": "Andere Marken",
-        "kb_more_desc": "Tastaturen für die dynamische Beleuchtung von Windows und für OpenRGB folgen bald.",
-        "settings_sub": "Start, Updates und Sprache.",
+        "kb_test_button": "Testen", "settings_sub": "Start, Updates und Sprache.",
         "settings_start_desc": "Läuft im Hintergrund, neben der Uhr", "settings_updates": "Updates",
         "settings_new": "Version {version} ist verfügbar", "settings_check_now": "Suchen",
         "settings_check_desc": "Einmal am Tag, über GitHub", "settings_lang": "Sprache",
@@ -2433,6 +3071,20 @@ STRINGS = {
         "music_desc": "Die anderen Tasten folgen dem Ton deines PCs. Er wird live analysiert, nie aufgenommen.",
         "music_sens": "Empfindlichkeit",
         "startup_store_desc": "Schalte Keyboard Clock in den Autostart-Apps von Windows ein oder aus",
+        "kb_backend": "Verwendete Tastatur",
+        "kb_backend_desc": "Automatisch versucht Logitech G HUB, dann die anderen",
+        "backend_auto": "Automatisch",
+        "backend_logitech": "Logitech G HUB",
+        "backend_dynamic": "Dynamische Beleuchtung von Windows (Beta)",
+        "backend_openrgb": "OpenRGB (Beta)",
+        "kb_found_title": "Gefundene Tastaturen",
+        "kb_scan": "Erneut suchen",
+        "kb_none": "Nicht gefunden",
+        "kb_keys": "{name} · {n} Tasten",
+        "kb_ghub_found": "Installiert",
+        "kb_dynamic_desc": "Razer, Corsair, ASUS, SteelSeries, HyperX, Logitech …",
+        "kb_openrgb_desc": "OpenRGB muss mit seinem SDK-Server laufen",
+        "kb_dynamic_on": "Die dynamische Beleuchtung von Windows steuert diese Tastatur auch: Schalte sie für diese Tastatur unter Einstellungen > Personalisierung > Dynamische Beleuchtung aus, sonst streiten sich beide um die Tasten.",
     },
     "it": {
         "status_showing": "Ora sulla tastiera", "status_waiting": "Appare dopo {delay} di inattività",
@@ -2506,9 +3158,7 @@ STRINGS = {
         "model_tkl-iso": "Senza tastierino, ISO (Europa)", "model_tkl-ansi": "Senza tastierino, ANSI (USA)",
         "model_full-iso": "Completa, ISO (Europa)", "model_full-ansi": "Completa, ANSI (USA)",
         "kb_test": "Prova la tastiera", "kb_test_desc": "Mostra da 0 a 9 su entrambi i lati",
-        "kb_test_button": "Prova", "kb_more": "Altre marche",
-        "kb_more_desc": "In arrivo le tastiere con Illuminazione dinamica di Windows e OpenRGB.",
-        "settings_sub": "Avvio, aggiornamenti e lingua.",
+        "kb_test_button": "Prova", "settings_sub": "Avvio, aggiornamenti e lingua.",
         "settings_start_desc": "Resta in background, accanto all'orologio", "settings_updates": "Aggiornamenti",
         "settings_new": "La versione {version} è disponibile", "settings_check_now": "Controlla",
         "settings_check_desc": "Una volta al giorno, da GitHub", "settings_lang": "Lingua",
@@ -2539,6 +3189,20 @@ STRINGS = {
         "music_desc": "Gli altri tasti seguono il suono del tuo PC. Viene analizzato dal vivo, mai registrato.",
         "music_sens": "Sensibilità",
         "startup_store_desc": "Attiva o disattiva Keyboard Clock nelle app di avvio di Windows",
+        "kb_backend": "Tastiera usata",
+        "kb_backend_desc": "Automatico prova Logitech G HUB, poi gli altri",
+        "backend_auto": "Automatico",
+        "backend_logitech": "Logitech G HUB",
+        "backend_dynamic": "Illuminazione dinamica di Windows (beta)",
+        "backend_openrgb": "OpenRGB (beta)",
+        "kb_found_title": "Tastiere trovate",
+        "kb_scan": "Cerca di nuovo",
+        "kb_none": "Non trovata",
+        "kb_keys": "{name} · {n} tasti",
+        "kb_ghub_found": "Installato",
+        "kb_dynamic_desc": "Razer, Corsair, ASUS, SteelSeries, HyperX, Logitech…",
+        "kb_openrgb_desc": "Serve OpenRGB avviato con il suo server SDK",
+        "kb_dynamic_on": "Anche l'Illuminazione dinamica di Windows controlla questa tastiera: disattivala per questa tastiera in Impostazioni > Personalizzazione > Illuminazione dinamica, altrimenti si contendono i tasti.",
     },
     "pt": {
         "status_showing": "No teclado agora", "status_waiting": "Aparece após {delay} sem atividade",
@@ -2610,9 +3274,7 @@ STRINGS = {
         "model_tkl-iso": "Sem teclado numérico, ISO (Europa)", "model_tkl-ansi": "Sem teclado numérico, ANSI (EUA)",
         "model_full-iso": "Completo, ISO (Europa)", "model_full-ansi": "Completo, ANSI (EUA)",
         "kb_test": "Testar meu teclado", "kb_test_desc": "Mostra de 0 a 9 dos dois lados",
-        "kb_test_button": "Testar", "kb_more": "Outras marcas",
-        "kb_more_desc": "Teclados com a Iluminação dinâmica do Windows e com OpenRGB chegam em breve.",
-        "settings_sub": "Inicialização, atualizações e idioma.",
+        "kb_test_button": "Testar", "settings_sub": "Inicialização, atualizações e idioma.",
         "settings_start_desc": "Roda em segundo plano, ao lado do relógio", "settings_updates": "Atualizações",
         "settings_new": "A versão {version} está disponível", "settings_check_now": "Verificar",
         "settings_check_desc": "Uma vez por dia, no GitHub", "settings_lang": "Idioma",
@@ -2643,6 +3305,20 @@ STRINGS = {
         "music_desc": "As outras teclas seguem o som do seu PC. Ele é analisado ao vivo, nunca gravado.",
         "music_sens": "Sensibilidade",
         "startup_store_desc": "Ative ou desative o Keyboard Clock nos aplicativos de inicialização do Windows",
+        "kb_backend": "Teclado usado",
+        "kb_backend_desc": "Automático tenta o Logitech G HUB e depois os outros",
+        "backend_auto": "Automático",
+        "backend_logitech": "Logitech G HUB",
+        "backend_dynamic": "Iluminação dinâmica do Windows (beta)",
+        "backend_openrgb": "OpenRGB (beta)",
+        "kb_found_title": "Teclados encontrados",
+        "kb_scan": "Procurar de novo",
+        "kb_none": "Não encontrado",
+        "kb_keys": "{name} · {n} teclas",
+        "kb_ghub_found": "Instalado",
+        "kb_dynamic_desc": "Razer, Corsair, ASUS, SteelSeries, HyperX, Logitech…",
+        "kb_openrgb_desc": "Precisa do OpenRGB rodando com o servidor SDK",
+        "kb_dynamic_on": "A Iluminação dinâmica do Windows também controla este teclado: desative-a para este teclado em Configurações > Personalização > Iluminação dinâmica, ou os dois vão disputar as teclas.",
     },
 }
 _lang = {"code": "en"}
@@ -5099,17 +5775,38 @@ class AppWindow:
         p, s, x0, x1 = self.px, self.store.s, self.cx0, self.cx1
         pad, rh = p(20), p(68)
         y = self._header(y, tr("nav_keyboard"), tr("keyboard_sub"))
-        ok = logitech_dll() is not None
+        self._card(y, rh)
+        pw = p(340)
+        self._picker("pick:backend", x1 - pad - pw, y + (rh - p(36)) / 2, pw, tr("backend_" + s["keyboard"]["backend"]),
+                     glyph="keyboard")
+        self._row_text(y, rh, "keyboard", tr("kb_backend"), tr("kb_backend_desc"), right=x1 - pad - pw - p(16))
+        y += rh + p(28)
+        if getattr(self, "kb_found", None) is None:
+            self.kb_found = find_keyboards(self.model())
+        y = self._label(y, tr("kb_found_title"))
         at, top = len(self.content[0]), y
-        status = (tr("kb_ok"), MenuPainter.GREEN) if ok else (tr("kb_missing"), MenuPainter.AMBER)
-        sw_ = self.tw(status[0], self.painter.f_small) + p(30)
-        self.S("circle", status[1], x1 - pad - sw_, y + rh / 2 - p(4), p(8))
-        self.T(status[0], self.painter.f_small, status[1], x1 - pad - sw_ + p(16), y, x1 - pad, y + rh)
-        self._row_text(y, rh, "keyboard", tr("kb_ghub"), None, right=x1 - pad - sw_ - p(12))
-        y += rh
-        th_ = self.wrap_h(tr("kb_help"), self.fonts["body"], x1 - x0 - 2 * pad)
-        self.W(tr("kb_help"), self.fonts["body"], MenuPainter.ICON, x0 + pad, y, x1 - pad, y + th_)
-        y += th_ + pad
+        descs = {"logitech": tr("kb_help"), "dynamic": tr("kb_dynamic_desc"), "openrgb": tr("kb_openrgb_desc")}
+        for i, (kind, name, n, note) in enumerate(self.kb_found):
+            if i:
+                self._sep(y)
+            if name:
+                status = (tr("kb_ghub_found") if kind == "logitech" else tr("kb_keys", name=name, n=n)), MenuPainter.GREEN
+            else:
+                status = tr("kb_none"), MenuPainter.MUTED
+            sw_ = min(p(300), self.tw(status[0], self.painter.f_small) + p(30))
+            self.S("circle", status[1], x1 - pad - sw_, y + rh / 2 - p(4), p(8))
+            self.T(status[0], self.painter.f_small, status[1], x1 - pad - sw_ + p(16), y, x1 - pad, y + rh, 0x8000)
+            self._row_text(y, rh, "keyboard", tr("backend_" + kind), descs[kind], right=x1 - pad - sw_ - p(12))
+            y += rh
+            if note == "dynamic_on":
+                th_ = self.wrap_h(tr("kb_dynamic_on"), self.painter.f_small, x1 - x0 - 2 * pad - p(42))
+                self.W(tr("kb_dynamic_on"), self.painter.f_small, MenuPainter.AMBER, x0 + pad + p(42), y - p(8),
+                       x1 - pad, y - p(8) + th_)
+                y += th_ + p(4)
+        self._sep(y)
+        y += p(12)
+        self._button("kb:scan", x1 - pad, y, tr("kb_scan"), "secondary", icon="refresh")
+        y += p(34) + p(14)
         self._card_behind(at, top, y - top)
         y += p(24)
         y = self._label(y, tr("kb_layout"))
@@ -5122,9 +5819,6 @@ class AppWindow:
         self._sep(y)
         bx = self._button("kb:test", x1 - pad, y + (rh - p(34)) / 2, tr("kb_test_button"), "secondary", icon="light")
         self._row_text(y, rh, "light", tr("kb_test"), tr("kb_test_desc"), right=bx - p(16))
-        y += rh + p(24)
-        self._card(y, rh)
-        self._row_text(y, rh, "apps", tr("kb_more"), tr("kb_more_desc"))
         return y + rh
 
     def _page_settings(self, y):
@@ -5454,6 +6148,8 @@ class AppWindow:
             st.replace(merge(s, {"display": {"font": "classic", "custom_font": {}}}))
         elif wid == "font:show":
             self._show_font(10)
+        elif wid == "kb:scan":
+            self.kb_found = find_keyboards(self.model())
         elif wid == "kb:test":
             m = Model(c.model_name())
             c.show_for(8.5, lambda t, m=m: self.font_frame(m, str(int(t / 0.85) % 10)))
@@ -5564,6 +6260,9 @@ class AppWindow:
         elif which == "model":
             for name in ("auto",) + MODELS:
                 radio(tr("model_" + name), name, s["keyboard"]["model"] == name)
+        elif which == "backend":
+            for name in ("auto",) + BACKENDS:
+                radio(tr("backend_" + name), name, s["keyboard"]["backend"] == name)
         elif which == "lang":
             for code, name in self.LANG_NAMES:
                 radio(name or tr("lang_auto"), code, s["lang"] == code)
@@ -5579,6 +6278,8 @@ class AppWindow:
             st.set(("show", "hotkey"), value)
         elif which == "model":
             st.set(("keyboard", "model"), value)
+        elif which == "backend":
+            st.set(("keyboard", "backend"), value)
         elif which == "lang":
             st.set(("lang",), value)
             set_lang(value or detect_lang())

@@ -39,7 +39,7 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart("v")
           if ($version -notmatch '^\d+\.\d+\.\d+') { $version = (Select-String -Path pyproject.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value }
           $code = (Select-String -Path keyboard_clock.py -Pattern '^__version__ = "(.+)"').Matches[0].Groups[1].Value
-          if ($code -ne $version) { throw "the tag says $version but keyboard_clock.py says $code: in-app updates would loop" }
+          if ($code -ne $version) { throw "the tag says ${version} but keyboard_clock.py says ${code}, so in-app updates would loop" }
           $tag = "${{ github.ref }}".StartsWith("refs/tags/")
           $sign = "none"
           if ($env:SIGNPATH_ORGANIZATION_ID) {

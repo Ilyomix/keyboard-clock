@@ -263,6 +263,41 @@ class Timers(unittest.TestCase):
         self.assertEqual(f["F12"], (0, 0, 0))                            # treble bands are silent here
 
 
+class OtherBrands(unittest.TestCase):
+    def test_lamps_name_their_keys(self):
+        m = kc.Model("tkl-iso")
+        lamps = [kc.Lamp(i, 0, 0, 0, kc.KEY_CODES[k][0]) for i, k in enumerate(("F1", "Q", "Space", "<"))]
+        self.assertEqual(kc.lamp_key_map(lamps, m), ["F1", "Q", "Space", "<"])
+
+    def test_lamps_without_keys_are_matched_by_position(self):
+        m = kc.Model("tkl-ansi")
+        um = 19050                                                        # a key is 19.05 mm wide
+        lamps = [kc.Lamp(i, round(cx * um), round(cy * um), 0) for i, (k, (cx, cy)) in enumerate(m.center.items())]
+        keys = kc.lamp_key_map(lamps, m)
+        self.assertEqual(keys, list(m.center))
+
+    def test_openrgb_led_names(self):
+        self.assertEqual(kc.orgb_key("Key: F1"), "F1")
+        self.assertEqual(kc.orgb_key("Key: Left Shift"), "LShift")
+        self.assertEqual(kc.orgb_key("Key: Number Pad 7"), "KP7")
+        self.assertEqual(kc.orgb_key("Key: \\ (ISO)"), "<")
+        self.assertIsNone(kc.orgb_key("Logo"))
+
+    def test_openrgb_controller_with_led_names(self):
+        import struct
+
+        def string(t):
+            b = t.encode() + b"\0"
+            return struct.pack("<H", len(b)) + b
+        body = struct.pack("<i", 5) + string("Keyboard") + b"".join(string(x) for x in ("v", "d", "1", "s", "l"))
+        body += struct.pack("<Hi", 0, 0)                                  # no modes
+        body += struct.pack("<H", 1) + string("Keys") + struct.pack("<iIIIH", 0, 2, 2, 2, 0)
+        body += struct.pack("<H", 2) + string("Key: F1") + struct.pack("<I", 0) + string("Key: Escape") + struct.pack("<I", 1)
+        info = kc.parse_orgb_controller(struct.pack("<I", len(body) + 4) + body, 3)
+        self.assertEqual(info["led_names"], ["Key: F1", "Key: Escape"])
+        self.assertEqual([kc.orgb_key(n) for n in info["led_names"]], ["F1", "Esc"])
+
+
 class Settings(unittest.TestCase):
     def test_defaults_are_clean(self):
         self.assertEqual(kc.clean_settings({}), kc.clean_settings(kc.clean_settings({})))
