@@ -399,7 +399,7 @@ def hour_text(wall, hour12, zero):
 DISPLAY_MODES = ("time", "time_date", "custom")
 DIGIT_ITEMS = ("hours", "minutes", "seconds", "day", "month")
 TRANSITIONS = ("fade", "slide", "wipe", "dissolve", "none")
-SECONDS_STYLES = ("block", "bar", "numpad", "beat", "off")
+SECONDS_STYLES = ("block", "numpad", "beat", "off")
 STYLES = ("solid", "gradient", "flow", "rainbow", "daytime", "digits")
 BACKGROUNDS = ("off", "dim", "gradient", "breathe", "twinkle", "music")
 MUSIC_STYLES = ("pulse", "spectrum")
@@ -835,8 +835,8 @@ class Renderer:
         return out
 
     def timer_view(self, timer, wall):
-        """Minutes left in big digits (seconds in the last minute), a bar of the time left on the bottom row,
-        then the whole keyboard flashing when it is over."""
+        """Minutes left in big digits (seconds in the last minute), the time left on the 3x3 block of keys
+        Print Screen to Page Down, which empties as time goes, then the whole keyboard flashing when it is over."""
         m = self.model
         color = hex_color(timer["color"])
         left = timer["left"]
@@ -847,12 +847,11 @@ class Renderer:
             spans = digit_spans(m, text, "timer", self.custom_font)
             fade = 1.0 if left >= 60 else 0.55 + 0.45 * (0.5 + 0.5 * math.cos(2 * math.pi * left))
             content = {k: (*color, a * fade) for k, (r, g, b, a) in rasterize(m, spans, lambda *a: color).items()}
-            length = left / max(1.0, timer["total"]) * MAIN_W
-            for k, x, y, w, h in m.rects:
-                if y == ROW_YS[5] and x < MAIN_W:
-                    a = min(1.0, max(0.0, (length - x) / w))
-                    if a > 0:
-                        content[k] = (*color, perceived(a))
+            filled = left / max(1.0, timer["total"]) * len(SECONDS_BLOCK)
+            for i, k in enumerate(SECONDS_BLOCK):
+                a = min(1.0, max(0.0, filled - i))
+                if a > 0:
+                    content[k] = (*color, perceived(a))
         else:
             a = 0.15 + 0.85 * (0.5 + 0.5 * math.cos(2 * math.pi * 2 * timer["done"]))
             overlay = {k: (*color, a) for k in m.keys}
@@ -879,13 +878,6 @@ class Renderer:
                 level = min(1.0, max(0.0, progress - i))
                 if level > 0:
                     out[k] = (*color, perceived(level))
-        elif style == "bar":
-            length = sec / 60 * MAIN_W
-            for k, x, y, w, h in m.rects:
-                if y == ROW_YS[5] and x < MAIN_W:
-                    level = min(1.0, max(0.0, (length - x) / w))
-                    if level > 0:
-                        out[k] = (*color, perceived(level))
         elif style == "numpad":
             tens, units = f"KP{wall.second // 10}", f"KP{wall.second % 10}"
             out[tens] = (*color, 1.0)
@@ -1468,7 +1460,7 @@ DEMO = [
     ("Flowing gradient, breathing background", 7, {"look": {"theme": "ocean"}}),
     ("Sunset gradient, dissolve", 7, {"display": {"transition": "dissolve", "transition_secs": 0.7},
                                        "look": {"theme": "sunset"}}),
-    ("Colors of the day, seconds bar", 7, {"display": {"seconds": "bar"}, "look": {"theme": "daylight"}}),
+    ("Colors of the day, seconds beat", 7, {"display": {"seconds": "beat"}, "look": {"theme": "daylight"}}),
     ("Hourly chime", 4, {"chime": True}),
     ("Night, red", 7, {"night": {"on": True, "from": "00:00", "to": "23:59", "action": "red", "brightness": 40}}),
 ]
@@ -2048,7 +2040,7 @@ STRINGS = {
         "ok": "OK", "cancel": "Cancel",
         "formats": "Formats", "hour12": "12-hour clock", "leading_zero": "Leading zero",
         "leading_zero_desc": "09:05 rather than 9:05", "seconds": "Seconds", "sec_block": "Key block",
-        "sec_bar": "Bar", "sec_numpad": "Numpad", "sec_beat": "Beat", "sec_off": "None",
+        "sec_numpad": "Numpad", "sec_beat": "Beat", "sec_off": "None",
         "look_sub": "Colors, background and effects.", "themes": "Themes",
         "theme_neon": "Neon", "theme_matrix": "Matrix", "theme_sunset": "Sunset", "theme_ocean": "Ocean",
         "theme_white": "White", "theme_rainbow": "Rainbow", "theme_daylight": "Colors of the day",
@@ -2147,7 +2139,7 @@ STRINGS = {
         "ok": "OK", "cancel": "Annuler",
         "formats": "Formats", "hour12": "Format 12 heures", "leading_zero": "Zéro devant",
         "leading_zero_desc": "09:05 plutôt que 9:05", "seconds": "Secondes", "sec_block": "Bloc",
-        "sec_bar": "Barre", "sec_numpad": "Pavé num.", "sec_beat": "Battement", "sec_off": "Aucune",
+        "sec_numpad": "Pavé num.", "sec_beat": "Battement", "sec_off": "Aucune",
         "look_sub": "Couleurs, fond et effets.", "themes": "Thèmes",
         "theme_neon": "Néon", "theme_matrix": "Matrix", "theme_sunset": "Coucher de soleil", "theme_ocean": "Océan",
         "theme_white": "Blanc", "theme_rainbow": "Arc-en-ciel", "theme_daylight": "Couleurs du jour",
@@ -2253,7 +2245,7 @@ STRINGS = {
         "ok": "Aceptar", "cancel": "Cancelar",
         "formats": "Formatos", "hour12": "Formato de 12 horas", "leading_zero": "Cero inicial",
         "leading_zero_desc": "09:05 en lugar de 9:05", "seconds": "Segundos", "sec_block": "Bloque",
-        "sec_bar": "Barra", "sec_numpad": "Teclado num.", "sec_beat": "Pulso", "sec_off": "Ninguno",
+        "sec_numpad": "Teclado num.", "sec_beat": "Pulso", "sec_off": "Ninguno",
         "look_sub": "Colores, fondo y efectos.", "themes": "Temas",
         "theme_neon": "Neón", "theme_matrix": "Matrix", "theme_sunset": "Atardecer", "theme_ocean": "Océano",
         "theme_white": "Blanco", "theme_rainbow": "Arcoíris", "theme_daylight": "Colores del día",
@@ -2359,7 +2351,7 @@ STRINGS = {
         "ok": "OK", "cancel": "Abbrechen",
         "formats": "Formate", "hour12": "12-Stunden-Format", "leading_zero": "Führende Null",
         "leading_zero_desc": "09:05 statt 9:05", "seconds": "Sekunden", "sec_block": "Tastenblock",
-        "sec_bar": "Balken", "sec_numpad": "Ziffernblock", "sec_beat": "Puls", "sec_off": "Keine",
+        "sec_numpad": "Ziffernblock", "sec_beat": "Puls", "sec_off": "Keine",
         "look_sub": "Farben, Hintergrund und Effekte.", "themes": "Designs",
         "theme_neon": "Neon", "theme_matrix": "Matrix", "theme_sunset": "Sonnenuntergang", "theme_ocean": "Ozean",
         "theme_white": "Weiß", "theme_rainbow": "Regenbogen", "theme_daylight": "Farben des Tages",
@@ -2465,7 +2457,7 @@ STRINGS = {
         "ok": "OK", "cancel": "Annulla",
         "formats": "Formati", "hour12": "Formato 12 ore", "leading_zero": "Zero iniziale",
         "leading_zero_desc": "09:05 invece di 9:05", "seconds": "Secondi", "sec_block": "Blocco",
-        "sec_bar": "Barra", "sec_numpad": "Tastierino", "sec_beat": "Battito", "sec_off": "Nessuno",
+        "sec_numpad": "Tastierino", "sec_beat": "Battito", "sec_off": "Nessuno",
         "look_sub": "Colori, sfondo ed effetti.", "themes": "Temi",
         "theme_neon": "Neon", "theme_matrix": "Matrix", "theme_sunset": "Tramonto", "theme_ocean": "Oceano",
         "theme_white": "Bianco", "theme_rainbow": "Arcobaleno", "theme_daylight": "Colori del giorno",
@@ -2569,7 +2561,7 @@ STRINGS = {
         "ok": "OK", "cancel": "Cancelar",
         "formats": "Formatos", "hour12": "Formato de 12 horas", "leading_zero": "Zero à esquerda",
         "leading_zero_desc": "09:05 em vez de 9:05", "seconds": "Segundos", "sec_block": "Bloco",
-        "sec_bar": "Barra", "sec_numpad": "Teclado num.", "sec_beat": "Pulso", "sec_off": "Nenhum",
+        "sec_numpad": "Teclado num.", "sec_beat": "Pulso", "sec_off": "Nenhum",
         "look_sub": "Cores, fundo e efeitos.", "themes": "Temas",
         "theme_neon": "Neon", "theme_matrix": "Matrix", "theme_sunset": "Pôr do sol", "theme_ocean": "Oceano",
         "theme_white": "Branco", "theme_rainbow": "Arco-íris", "theme_daylight": "Cores do dia",

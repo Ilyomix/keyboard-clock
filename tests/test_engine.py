@@ -241,8 +241,9 @@ class Timers(unittest.TestCase):
         f = r.frame(1.0, WALL, extra={"timer": timer})
         lit = {k for k, c in f.items() if sum(c)}
         self.assertTrue(set(kc.classic_keys(m, "0", 0)) <= lit and set(kc.classic_keys(m, "3", 1)) <= lit)
-        self.assertIn("LCtrl", lit)                                     # the bar of the time left
-        self.assertFalse(lit & set(kc.SECONDS_BLOCK))
+        self.assertIn("PrtSc", lit)                                     # the block of the time left...
+        self.assertNotIn("PgDn", lit)                                   # ...emptying from its end
+        self.assertNotIn("LCtrl", lit)                                  # nothing on the bottom row
         over = r.frame(1.0, WALL, extra={"timer": dict(timer, left=0.0, done=0.0)})
         self.assertTrue(all(sum(c) > 0 for c in over.values()))
         alarm = {"for": 2.0, "color": "#ff1a1a"}
