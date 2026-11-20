@@ -67,7 +67,7 @@ RAFRAICHISSEMENT_COMPLET = 30  # renvoie toutes les touches toutes les N seconde
 BARRE = ("###.", "####")   # barre du haut : F1-F3 à gauche, F5-F8 à droite
 CHIFFRES = {
     "0": ["###", "#..#", "#..#", "###"],              # sans les touches F (plus court)
-    "1": ["..#.", ".##", "..#.", "..#.", "..#"],
+    "1": ["..#.", ".##", "..#.", "..#.", "###"],      # pied de 3 touches (sinon la tige penche)
     "2": [BARRE, "..#", "####", "#...", "###"],
     "3": [BARRE, "..#", ".###", "...#", "###"],
     "4": [("#.#.", "#..#"), "#.#", "####", "...#", "..#"],
