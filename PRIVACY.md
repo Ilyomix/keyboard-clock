@@ -31,6 +31,8 @@ Only while the *Music* background shows, Keyboard Clock listens to what Windows 
 
 `%LOCALAPPDATA%\KeyboardClock` holds your settings (`settings.json`, with your colors, alarms and digits), the app's icons, and the log of the last two sessions. Uninstalling Keyboard Clock removes this folder, the startup entry, the Start menu shortcut and the name Windows shows on its notifications. For the portable and Python versions, `keyboard-clock --uninstall` does the same.
 
+The Microsoft Store version keeps the same files in its own folder, `%LOCALAPPDATA%\Packages\Ilyomix.KeyboardClock_y5wc0ym4mfvr4\LocalState`, which Windows deletes when you uninstall it. If you used another version of Keyboard Clock before, the Store version copies its `settings.json` on its first start, so your settings carry over.
+
 ## Changes
 
 This policy is part of the Keyboard Clock repository: its history shows every change.

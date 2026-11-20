@@ -38,7 +38,28 @@ APP = "Keyboard Clock"
 APP_ID = "KeyboardClock"
 APP_AUMID = "Ilyomix.KeyboardClock"          # who sends our notifications, for Windows
 REPO_URL = "https://github.com/Ilyomix/keyboard-clock"
-DATA_DIR = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), APP_ID)
+
+
+def package_family():
+    """Package family name when Keyboard Clock runs from its Microsoft Store package (MSIX), else None."""
+    try:
+        get = ctypes.WinDLL("kernel32").GetCurrentPackageFamilyName
+    except (AttributeError, OSError):
+        return None
+    get.restype, get.argtypes = ctypes.c_long, [ctypes.POINTER(ctypes.c_uint32), ctypes.c_wchar_p]
+    n = ctypes.c_uint32(0)
+    if get(ctypes.byref(n), None) != 122:            # ERROR_INSUFFICIENT_BUFFER: there is a package
+        return None                                  # APPMODEL_ERROR_NO_PACKAGE: installer, portable, pip, .py
+    name = ctypes.create_unicode_buffer(n.value)
+    return name.value if get(ctypes.byref(n), name) == 0 else None
+
+
+PACKAGE = package_family()       # the Store version: the Store updates it, Windows starts it at sign-in (StartupTask)
+LOCAL_APPDATA = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+# The Store version keeps its files in its package's folder: Windows deletes it with the app, and Windows'
+# notifications can read the pictures there
+DATA_DIR = (os.path.join(LOCAL_APPDATA, "Packages", PACKAGE, "LocalState") if PACKAGE
+            else os.path.join(LOCAL_APPDATA, APP_ID))
 SETTINGS_PATH = os.path.join(DATA_DIR, "settings.json")
 LOG_PATH = os.path.join(DATA_DIR, "keyboard-clock.log")
 STOP_EVENT = "Local\\KeyboardClock.Stop"
@@ -628,6 +649,19 @@ def save_settings(data, path=SETTINGS_PATH):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=1, ensure_ascii=False)
     os.replace(tmp, path)
+
+
+def store_first_run():
+    """First start of the Store version: it keeps the settings of a Keyboard Clock installed before
+    (KeyboardClockSetup.exe, portable, pip)."""
+    if not PACKAGE or os.path.exists(SETTINGS_PATH):
+        return
+    import shutil
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        shutil.copyfile(os.path.join(LOCAL_APPDATA, APP_ID, "settings.json"), SETTINGS_PATH)
+    except OSError:
+        pass
 
 
 def minutes_of(hhmm):
@@ -2687,7 +2721,7 @@ STRINGS = {
         "model_tkl-ansi": "Tenkeyless, ANSI (US)", "model_full-iso": "Full size, ISO (Europe)",
         "model_full-ansi": "Full size, ANSI (US)",
         "kb_test": "Test my keyboard", "kb_test_desc": "Shows 0 to 9 on both sides",
-        "kb_test_button": "Test", "settings_sub": "Startup, updates and language.",
+        "kb_test_button": "Test", "settings_sub": "Startup, updates and language.", "settings_sub_store": "Startup and language.",
         "settings_start_desc": "Runs in the background, next to the clock", "settings_updates": "Updates",
         "settings_new": "Version {version} is available", "settings_check_now": "Check now",
         "settings_check_desc": "Once a day, from GitHub", "settings_lang": "Language",
@@ -2803,7 +2837,7 @@ STRINGS = {
         "model_tkl-ansi": "Sans pavé numérique, ANSI (US)", "model_full-iso": "Complet, ISO (Europe)",
         "model_full-ansi": "Complet, ANSI (US)",
         "kb_test": "Tester mon clavier", "kb_test_desc": "Affiche 0 à 9 des deux côtés", "kb_test_button": "Tester",
-        "settings_sub": "Démarrage, mises à jour et langue.",
+        "settings_sub": "Démarrage, mises à jour et langue.", "settings_sub_store": "Démarrage et langue.",
         "settings_start_desc": "Tourne en arrière-plan, près de l'horloge", "settings_updates": "Mises à jour",
         "settings_new": "La version {version} est disponible", "settings_check_now": "Vérifier",
         "settings_check_desc": "Une fois par jour, sur GitHub", "settings_lang": "Langue",
@@ -2920,7 +2954,7 @@ STRINGS = {
         "model_tkl-iso": "Sin teclado numérico, ISO (Europa)", "model_tkl-ansi": "Sin teclado numérico, ANSI (EE. UU.)",
         "model_full-iso": "Completo, ISO (Europa)", "model_full-ansi": "Completo, ANSI (EE. UU.)",
         "kb_test": "Probar mi teclado", "kb_test_desc": "Muestra del 0 al 9 en ambos lados",
-        "kb_test_button": "Probar", "settings_sub": "Inicio, actualizaciones e idioma.",
+        "kb_test_button": "Probar", "settings_sub": "Inicio, actualizaciones e idioma.", "settings_sub_store": "Inicio e idioma.",
         "settings_start_desc": "Funciona en segundo plano, junto al reloj", "settings_updates": "Actualizaciones",
         "settings_new": "La versión {version} está disponible", "settings_check_now": "Buscar",
         "settings_check_desc": "Una vez al día, desde GitHub", "settings_lang": "Idioma",
@@ -3040,7 +3074,7 @@ STRINGS = {
         "model_tkl-iso": "Ohne Ziffernblock, ISO (Europa)", "model_tkl-ansi": "Ohne Ziffernblock, ANSI (USA)",
         "model_full-iso": "Volle Größe, ISO (Europa)", "model_full-ansi": "Volle Größe, ANSI (USA)",
         "kb_test": "Meine Tastatur testen", "kb_test_desc": "Zeigt 0 bis 9 auf beiden Seiten",
-        "kb_test_button": "Testen", "settings_sub": "Start, Updates und Sprache.",
+        "kb_test_button": "Testen", "settings_sub": "Start, Updates und Sprache.", "settings_sub_store": "Start und Sprache.",
         "settings_start_desc": "Läuft im Hintergrund, neben der Uhr", "settings_updates": "Updates",
         "settings_new": "Version {version} ist verfügbar", "settings_check_now": "Suchen",
         "settings_check_desc": "Einmal am Tag, über GitHub", "settings_lang": "Sprache",
@@ -3158,7 +3192,7 @@ STRINGS = {
         "model_tkl-iso": "Senza tastierino, ISO (Europa)", "model_tkl-ansi": "Senza tastierino, ANSI (USA)",
         "model_full-iso": "Completa, ISO (Europa)", "model_full-ansi": "Completa, ANSI (USA)",
         "kb_test": "Prova la tastiera", "kb_test_desc": "Mostra da 0 a 9 su entrambi i lati",
-        "kb_test_button": "Prova", "settings_sub": "Avvio, aggiornamenti e lingua.",
+        "kb_test_button": "Prova", "settings_sub": "Avvio, aggiornamenti e lingua.", "settings_sub_store": "Avvio e lingua.",
         "settings_start_desc": "Resta in background, accanto all'orologio", "settings_updates": "Aggiornamenti",
         "settings_new": "La versione {version} è disponibile", "settings_check_now": "Controlla",
         "settings_check_desc": "Una volta al giorno, da GitHub", "settings_lang": "Lingua",
@@ -3274,7 +3308,7 @@ STRINGS = {
         "model_tkl-iso": "Sem teclado numérico, ISO (Europa)", "model_tkl-ansi": "Sem teclado numérico, ANSI (EUA)",
         "model_full-iso": "Completo, ISO (Europa)", "model_full-ansi": "Completo, ANSI (EUA)",
         "kb_test": "Testar meu teclado", "kb_test_desc": "Mostra de 0 a 9 dos dois lados",
-        "kb_test_button": "Testar", "settings_sub": "Inicialização, atualizações e idioma.",
+        "kb_test_button": "Testar", "settings_sub": "Inicialização, atualizações e idioma.", "settings_sub_store": "Inicialização e idioma.",
         "settings_start_desc": "Roda em segundo plano, ao lado do relógio", "settings_updates": "Atualizações",
         "settings_new": "A versão {version} está disponível", "settings_check_now": "Verificar",
         "settings_check_desc": "Uma vez por dia, no GitHub", "settings_lang": "Idioma",
@@ -4424,9 +4458,9 @@ def latest_release():
 
 
 def install_kind():
+    if PACKAGE:
+        return "store"                                   # updates and startup belong to the Store and Windows
     if getattr(sys, "frozen", False):
-        if "\\windowsapps\\" in sys.executable.lower():
-            return "store"                               # updates and startup belong to the Store and Windows
         here = os.path.dirname(sys.executable)
         return "installer" if os.path.exists(os.path.join(here, "unins000.exe")) else "portable"
     return "pip" if "site-packages" in os.path.abspath(__file__).lower() else "script"
@@ -4456,6 +4490,8 @@ def apply_update(info):
     import subprocess
     import tempfile
     kind = install_kind()
+    if kind == "store":
+        raise OSError("the Microsoft Store updates this Keyboard Clock")
     assets = info["assets"]
     if kind == "installer":
         name = "KeyboardClockSetup.exe"
@@ -5824,7 +5860,7 @@ class AppWindow:
     def _page_settings(self, y):
         p, s, t, c = self.px, self.store.s, self.tray, self.clock
         x1 = self.cx1
-        y = self._header(y, tr("nav_settings"), tr("settings_sub"))
+        y = self._header(y, tr("nav_settings"), tr("settings_sub_store" if is_store() else "settings_sub"))
         rh = p(68)
         self._card(y, rh)
         if is_store():
@@ -6616,6 +6652,7 @@ def main(argv=None):
     args = parse_args(argv)
     if os.path.basename(sys.executable).lower().startswith("keyboardclockbackground"):
         args.background = args.from_autostart = True     # the Store package's startup task
+    store_first_run()
     for stream in (sys.stdout, sys.stderr):
         if stream is not None and hasattr(stream, "reconfigure"):
             stream.reconfigure(errors="replace")      # the Windows console can't show every character

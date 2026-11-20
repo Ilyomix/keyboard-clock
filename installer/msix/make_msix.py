@@ -2,12 +2,9 @@
 
     python installer/msix/make_msix.py 0.2.0
 
-The Store signs the package itself, so a Store install never meets SmartScreen. The package identity comes
-from Partner Center (Product management > Product identity) through environment variables:
-    MSIX_IDENTITY_NAME   e.g. 12345Ilyomix.KeyboardClock
-    MSIX_PUBLISHER       e.g. CN=ABCD1234-...
-    MSIX_PUBLISHER_NAME  e.g. Ilyomix
-Without them, placeholders are used: the package builds and can be checked, but the Store would refuse it.
+The Store signs the package itself, so a Store install never meets SmartScreen. The package identity is Keyboard
+Clock's in Partner Center (Product management > Product identity); the environment variables MSIX_IDENTITY_NAME,
+MSIX_PUBLISHER and MSIX_PUBLISHER_NAME replace it, for a test package.
 
 Writes build/msix/ (the layout) and dist/KeyboardClock.msix (unsigned, for the Store). Needs makeappx.exe from
 the Windows SDK (on GitHub's windows-latest runners).
@@ -24,11 +21,17 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, ROOT)
 import keyboard_clock as kc  # noqa: E402  (the app draws its own icon)
 
+IDENTITY = {"MSIX_IDENTITY_NAME": "Ilyomix.KeyboardClock",
+            "MSIX_PUBLISHER": "CN=1086910A-7B63-40D7-8B50-6BF71E2EB5C4",
+            "MSIX_PUBLISHER_NAME": "Ilyomix"}
 LANGS = {"en": "en-us", "fr": "fr-fr", "es": "es-es", "de": "de-de", "it": "it-it", "pt": "pt-br"}
 LOGOS = {"StoreLogo.png": 50, "Square44x44Logo.png": 44, "Square71x71Logo.png": 71, "Square150x150Logo.png": 150,
          "Square310x310Logo.png": 310, "Square44x44Logo.targetsize-256.png": 256,
          "Square44x44Logo.targetsize-48.png": 48, "Square44x44Logo.targetsize-24.png": 24,
          "Square44x44Logo.targetsize-16.png": 16}
+for _size in (16, 24, 32, 48, 256):  # taskbar, Start, Alt+Tab: also without a plate behind them
+    for _form in ("targetsize-{}", "altform-unplated_targetsize-{}", "altform-lightunplated_targetsize-{}"):
+        LOGOS[f"Square44x44Logo.{_form.format(_size)}.png"] = _size
 
 MANIFEST = """<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
@@ -119,9 +122,9 @@ def main():
     wide_logo(os.path.join(out, "Assets", "Wide310x150Logo.png"))
     resources = "\n".join(f'    <Resource Language="{tag}" />' for tag in LANGS.values())
     manifest = MANIFEST.format(
-        name=escape(os.environ.get("MSIX_IDENTITY_NAME") or "Ilyomix.KeyboardClock"),
-        publisher=escape(os.environ.get("MSIX_PUBLISHER") or "CN=Ilyomix"),
-        publisher_name=escape(os.environ.get("MSIX_PUBLISHER_NAME") or "Ilyomix"),
+        name=escape(os.environ.get("MSIX_IDENTITY_NAME") or IDENTITY["MSIX_IDENTITY_NAME"]),
+        publisher=escape(os.environ.get("MSIX_PUBLISHER") or IDENTITY["MSIX_PUBLISHER"]),
+        publisher_name=escape(os.environ.get("MSIX_PUBLISHER_NAME") or IDENTITY["MSIX_PUBLISHER_NAME"]),
         version=version, resources=resources,
         description=escape("The time in big digits on your RGB keyboard while you are away"))
     with open(os.path.join(out, "AppxManifest.xml"), "w", encoding="utf-8") as f:
