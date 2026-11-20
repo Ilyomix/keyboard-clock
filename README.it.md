@@ -94,6 +94,8 @@ Altri download, tutti nell'[ultima versione](https://github.com/Ilyomix/keyboard
 Ogni versione è compilata da [GitHub Actions](.github/workflows/release.yml) a partire da questo codice sorgente, testata
 (installazione e disinstallazione comprese) e pubblicata con checksum SHA-256.
 
+> **Firma del codice**: Keyboard Clock sta richiedendo la firma del codice gratuita di [SignPath Foundation](https://signpath.org/) per i progetti open source; i file per Windows saranno firmati così appena il progetto sarà accettato. Fino ad allora Windows SmartScreen potrebbe segnalare un autore sconosciuto: fai clic su *Ulteriori informazioni → Esegui comunque*. [Politica di firma del codice](CODE_SIGNING.md) · [Privacy](PRIVACY.md)
+
 ## Quali tastiere funzionano?
 
 Qualsiasi tastiera con **RGB per singolo tasto** che uno di questi software possa comandare. I tasti vengono riconosciuti

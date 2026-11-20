@@ -95,6 +95,8 @@ Outros downloads, todos na [versão mais recente](https://github.com/Ilyomix/key
 Cada versão é compilada pelo [GitHub Actions](.github/workflows/release.yml) a partir deste código-fonte, testada
 (incluindo instalação e desinstalação) e publicada com somas de verificação SHA-256.
 
+> **Assinatura de código**: o Keyboard Clock está solicitando a assinatura de código gratuita da [SignPath Foundation](https://signpath.org/) para projetos de código aberto; os arquivos do Windows serão assinados por ela assim que o projeto for aceito. Até lá, o Windows SmartScreen pode avisar sobre um editor desconhecido: clique em *Mais informações → Executar assim mesmo*. [Política de assinatura de código](CODE_SIGNING.md) · [Privacidade](PRIVACY.md)
+
 ## Quais teclados funcionam?
 
 Qualquer teclado com **RGB por tecla** que um destes consiga controlar. As teclas são encontradas pela posição, então o

@@ -94,6 +94,8 @@ Otras descargas, todas en la [última versión](https://github.com/Ilyomix/keybo
 [GitHub Actions](.github/workflows/release.yml) compila cada versión a partir de este código fuente, la prueba
 (instalación y desinstalación incluidas) y la publica con sumas de verificación SHA-256.
 
+> **Firma de código**: Keyboard Clock está solicitando la firma de código gratuita de [SignPath Foundation](https://signpath.org/) para proyectos de código abierto; los archivos de Windows se firmarán con ella en cuanto se acepte el proyecto. Mientras tanto, Windows SmartScreen puede avisar de un editor desconocido: haz clic en *Más información → Ejecutar de todas formas*. [Política de firma de código](CODE_SIGNING.md) · [Privacidad](PRIVACY.md)
+
 ## ¿Qué teclados son compatibles?
 
 Cualquier teclado con **RGB por tecla** que pueda controlar alguno de estos. Las teclas se localizan por su posición,

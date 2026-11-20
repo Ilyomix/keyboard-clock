@@ -91,6 +91,8 @@ Other downloads, all in the [latest release](https://github.com/Ilyomix/keyboard
 Every release is built by [GitHub Actions](.github/workflows/release.yml) from this source code, tested (install
 and uninstall included) and published with SHA-256 checksums.
 
+> **Code signing**: Keyboard Clock is applying for [SignPath Foundation](https://signpath.org/)'s free code signing for open source; the Windows files will be signed through it once the project is accepted. Until then Windows SmartScreen may warn about an unknown publisher: click *More info → Run anyway*. [Code signing policy](CODE_SIGNING.md) · [Privacy policy](PRIVACY.md)
+
 ## Which keyboards work?
 
 Any keyboard with **per-key RGB** that one of these can drive. Keys are found by their position, so the layout

@@ -96,6 +96,8 @@ Weitere Downloads, alle im [neuesten Release](https://github.com/Ilyomix/keyboar
 Jedes Release wird von [GitHub Actions](.github/workflows/release.yml) aus diesem Quellcode gebaut, getestet
 (Installation und Deinstallation inklusive) und mit SHA-256-Prüfsummen veröffentlicht.
 
+> **Code-Signatur**: Keyboard Clock bewirbt sich um die kostenlose Code-Signatur der [SignPath Foundation](https://signpath.org/) für Open-Source-Projekte; die Windows-Dateien werden damit signiert, sobald das Projekt angenommen ist. Bis dahin warnt Windows SmartScreen eventuell vor einem unbekannten Herausgeber: klicke auf *Weitere Informationen → Trotzdem ausführen*. [Richtlinie zur Codesignierung](CODE_SIGNING.md) · [Datenschutz](PRIVACY.md)
+
 ## Welche Tastaturen funktionieren?
 
 Jede Tastatur mit **RGB-Beleuchtung pro Taste**, die eine dieser Lösungen steuern kann. Die Tasten werden über ihre

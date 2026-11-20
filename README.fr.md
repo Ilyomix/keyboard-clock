@@ -97,6 +97,8 @@ Autres téléchargements, tous dans la [dernière version](https://github.com/Il
 Chaque version est compilée par [GitHub Actions](.github/workflows/release.yml) à partir de ce code source, testée
 (installation et désinstallation comprises) et publiée avec ses sommes de contrôle SHA-256.
 
+> **Signature du code** : Keyboard Clock demande la signature gratuite de [SignPath Foundation](https://signpath.org/) pour les projets open source ; les fichiers Windows seront signés par ce biais dès que le projet sera accepté. D'ici là, Windows SmartScreen peut signaler un éditeur inconnu : cliquez sur *Informations complémentaires → Exécuter quand même*. [Politique de signature du code](CODE_SIGNING.md) · [Confidentialité](PRIVACY.md)
+
 ## Quels claviers sont compatibles ?
 
 Tout clavier à **éclairage RGB par touche** que l'un de ces logiciels sait piloter. Les touches sont repérées par leur
