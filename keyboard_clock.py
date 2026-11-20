@@ -4154,7 +4154,8 @@ class AppWindow:
         return self.renderer().frame(time.monotonic() - self.t0, wall, None, night_now(s["night"], wall))
 
     def font_frame(self, model=None, digit=None, side=None):
-        """The digit being edited: left in the hours color, right in the minutes color (only `side` if given)."""
+        """The digit being edited: left in the hours color, right in the minutes color. With `side`, the other
+        side stays dimmed, as a reference."""
         s = self.store.s
         m = model or self.model()
         custom = s["display"]["custom_font"] if s["display"]["font"] == "custom" else None
@@ -4162,9 +4163,10 @@ class AppWindow:
         frame = {k: (0, 0, 0) for k in m.keys}
         colors = s["look"]["colors"]
         for pos, role in ((0, "hours"), (1, "minutes")):
-            if side is None or pos == side:
-                for k in font_keys(m, d, pos, custom):
-                    frame[k] = hex_color(colors[role])
+            level = 1.0 if side is None or pos == side else 0.22
+            color = tuple(round(v * level) for v in hex_color(colors[role]))
+            for k in font_keys(m, d, pos, custom):
+                frame[k] = color
         return frame
 
     def _keyboard(self, x, y, w, frame, area=None):
@@ -5232,7 +5234,7 @@ class AppWindow:
         return None
 
 
-def render_window_png(path, page, w=1060, h=1400, scale=1.0, settings=None):
+def render_window_png(path, page, w=1060, h=1400, scale=1.0, settings=None, attrs=None):
     """Draws the window's page into a PNG (no window on screen): for checks and the website's pictures."""
     class _Stop:
         h = None
@@ -5255,6 +5257,8 @@ def render_window_png(path, page, w=1060, h=1400, scale=1.0, settings=None):
     app = AppWindow(t)
     app.set_scale(scale)
     app.page = page
+    for k, v in (attrs or {}).items():
+        setattr(app, k, v)
     bmi = BITMAPINFOHEADER(sizeof(BITMAPINFOHEADER), w, -h, 1, 32, 0, 0, 0, 0, 0, 0)
     bits = ctypes.c_void_p()
     mem = gdi32.CreateCompatibleDC(None)
