@@ -29,8 +29,8 @@
 ---
 
 Éloignez-vous de votre PC : **Keyboard Clock** transforme votre clavier en horloge lisible depuis l'autre bout de la
-pièce. Les heures s'allument sur la moitié gauche des touches, puis les minutes sur la moitié droite, en gros chiffres
-dessinés touche par touche sur les touches F, la rangée des chiffres et les lettres. Les secondes remplissent les neuf
+pièce. D'abord les heures, puis les minutes, en deux gros chiffres
+dessinés touche par touche sur les touches F, la rangée des chiffres et les lettres, un chiffre sur chaque moitié du clavier. Les secondes remplissent les neuf
 touches au-dessus des flèches. Touchez la souris ou une touche, et votre éclairage habituel revient aussitôt.
 
 Il gère aussi un **minuteur**, des cycles **Pomodoro** et des **alarmes** directement sur les touches, s'anime au

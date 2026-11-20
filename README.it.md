@@ -29,8 +29,8 @@
 ---
 
 Allontanati dal PC e **Keyboard Clock** trasforma la tua tastiera in un orologio che leggi dall'altra parte della stanza.
-Le ore si accendono sulla metà sinistra dei tasti, poi i minuti sulla metà destra, a grandi cifre disegnate tasto per
-tasto sui tasti funzione, sulla fila dei numeri e sulle lettere. I secondi riempiono i nove tasti sopra le frecce. Tocca
+Prima le ore, poi i minuti, in due grandi cifre disegnate tasto per
+tasto sui tasti funzione, sulla fila dei numeri e sulle lettere, una cifra su ogni metà della tastiera. I secondi riempiono i nove tasti sopra le frecce. Tocca
 il mouse o un tasto qualsiasi e la tua illuminazione di sempre torna subito.
 
 Gestisce anche un **timer**, cicli **Pomodoro** e **sveglie** direttamente sui tasti, si accende con la tua **musica** e

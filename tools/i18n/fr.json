@@ -40,7 +40,7 @@
     "TKL et format complet"
   ],
   "how_h2": "Votre clavier devient une horloge",
-  "how_p": "Chaque chiffre est dessiné à la main sur de vraies touches : les heures sur la moitié gauche, les minutes sur la moitié droite, et les secondes dans les neuf touches au-dessus des flèches.",
+  "how_p": "Chaque chiffre est dessiné à la main sur de vraies touches. Le clavier montre deux chiffres à la fois, un sur chaque moitié : d'abord les heures, puis les minutes. Les secondes remplissent les neuf touches au-dessus des flèches.",
   "steps": [
     {
       "t": "Installez-le",

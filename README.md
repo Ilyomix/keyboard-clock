@@ -29,8 +29,8 @@
 ---
 
 Step away from your PC and **Keyboard Clock** turns your keyboard into a clock you can read from across the room.
-The hours light up on the left half of the keys, then the minutes on the right half, in big digits drawn key by key
-over the F-keys, the number row and the letters. The seconds fill the nine keys above the arrows. Touch the mouse or
+First the hours, then the minutes, in two big digits drawn key by key
+over the F-keys, the number row and the letters, one digit on each half of the keyboard. The seconds fill the nine keys above the arrows. Touch the mouse or
 any key and your usual lighting is back at once.
 
 It also runs a **timer**, **Pomodoro** cycles and **alarms** right on the keys, lights up with your **music**, and

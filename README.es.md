@@ -29,8 +29,8 @@
 ---
 
 Deja tu PC y **Keyboard Clock** convierte tu teclado en un reloj que puedes leer desde la otra punta de la habitación.
-Las horas se encienden en la mitad izquierda de las teclas y luego los minutos en la mitad derecha, con grandes dígitos
-dibujados tecla a tecla sobre las teclas de función, la fila de números y las letras. Los segundos llenan las nueve
+Primero las horas y luego los minutos, en dos grandes dígitos
+dibujados tecla a tecla sobre las teclas de función, la fila de números y las letras, un dígito en cada mitad del teclado. Los segundos llenan las nueve
 teclas sobre las flechas. Toca el ratón o cualquier tecla y tu iluminación de siempre vuelve al instante.
 
 También ejecuta un **temporizador**, ciclos **Pomodoro** y **alarmas** directamente en las teclas, se ilumina con tu
