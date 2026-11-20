@@ -2755,7 +2755,8 @@ class MenuPainter:
                         self._text(hdc, it["glyphs"][i], self.f_icon, color, x0, y0, x1, y1, 0x1)
                     else:
                         self._text(hdc, f"{it['values'][i]}%", self.f_small, color, x0, y0, x1, y1, 0x1)
-MenuPainter.ICONS.update(calendar="\uE787", keyboard="\uE765", font="\uE8D2", edit="\uE70F", timer="\uE916")
+MenuPainter.ICONS.update(calendar="\uE787", keyboard="\uE765", font="\uE8D2", edit="\uE70F", timer="\uE916",
+                         undo="\uE7A7", copy="\uE8C8", refresh="\uE72C")
 
 
 def taskbar():
@@ -4558,10 +4559,10 @@ class AppWindow:
         self._field_label(tr("font_digit"), y, p(40), x0 + pad + lw)
         self._segmented("fd", x0 + pad + lw, x1 - pad, y, [(str(i), None, str(i)) for i in range(10)], self.font_digit)
         y += p(40) + p(16)
-        bx = self._button("font:copy", x1 - pad, y, tr("font_copy"), "secondary")
-        self._button("font:reset", bx - p(10), y, tr("font_reset"), "quiet")
+        bx = self._button("font:copy", x1 - pad, y, tr("font_copy"), "secondary", icon="copy")
+        self._button("font:reset", bx - p(10), y, tr("font_reset"), "quiet", icon="undo")
         y += p(34) + p(10)
-        self._button("font:reset_all", x1 - pad, y, tr("font_reset_all"), "quiet")
+        self._button("font:reset_all", x1 - pad, y, tr("font_reset_all"), "quiet", icon="refresh")
         y += p(34) + pad
         self._card_behind(at, top, y - top)
         return y
@@ -4619,7 +4620,7 @@ class AppWindow:
             self._sep(ry)
         result = t._check_status()
         bx = self._button("check", x1 - p(20), ry + (rh - p(34)) / 2, tr("settings_check_now"), "secondary",
-                          busy=t.checking)
+                          icon="sync", busy=t.checking)
         self._row_text(ry, rh, "sync", tr("updates"), result[0] if result else f"{APP} {__version__}",
                        right=bx - p(16), desc_color=result[1] if result else None)
         ry += rh
@@ -4635,7 +4636,7 @@ class AppWindow:
         y += rh + p(28)
         y = self._label(y, tr("settings_help"))
         self._card(y, rh)
-        bx = self._button("open:log", x1 - p(20), y + (rh - p(34)) / 2, tr("settings_open"), "secondary")
+        bx = self._button("open:log", x1 - p(20), y + (rh - p(34)) / 2, tr("settings_open"), "secondary", icon="doc")
         self._row_text(y, rh, "doc", tr("open_log"), tr("settings_log_desc"), right=bx - p(16))
         return y + rh
 
