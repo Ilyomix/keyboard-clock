@@ -74,7 +74,7 @@ CHIFFRES = {
     "5": [BARRE, "#..", "####", "...#", "###"],
     "6": [(".#..", ".#.."), "#..", "####", "#..#", "###"],   # petit crochet (F2 / F6)
     "7": [BARRE, "..#", "..#.", ".#..", "#.."],
-    "8": [BARRE, "#.#", "####", "#..#", "###"],
+    "8": [".##.", "#.#", ".###", "#..#", "###"],      # petite boucle en haut (F2-F3 / F6-F7)
     "9": [BARRE, "#.#", ".###", "...#", ".##"],       # queue recourbée
 }
 # Position physique (en touches) de la 1re case de chaque rangée, par rapport au chiffre
