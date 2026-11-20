@@ -18,6 +18,10 @@
 </p>
 
 <p align="center">
+  <a href="https://apps.microsoft.com/detail/9N5M0SCJNPZ3"><img src="https://get.microsoft.com/images/es%20dark.svg" width="200" alt="Obtener en Microsoft Store"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/Ilyomix/keyboard-clock/releases/latest/download/KeyboardClockSetup.exe"><b>⬇ Descargar para Windows</b></a>
   &nbsp;·&nbsp; <a href="https://ilyomix.github.io/keyboard-clock/es/"><b>Sitio web y demo en vivo</b></a>
 </p>
@@ -71,9 +75,9 @@ También ejecuta un **temporizador**, ciclos **Pomodoro** y **alarmas** directam
 
 ## Instalación
 
-1. Descarga **[KeyboardClockSetup.exe](https://github.com/Ilyomix/keyboard-clock/releases/latest/download/KeyboardClockSetup.exe)**
+1. Instala Keyboard Clock desde **[Microsoft Store](https://apps.microsoft.com/detail/9N5M0SCJNPZ3)**: Windows lo instala y lo mantiene actualizado. O descarga **[KeyboardClockSetup.exe](https://github.com/Ilyomix/keyboard-clock/releases/latest/download/KeyboardClockSetup.exe)**
    (Windows 10 u 11, de 64 bits, sin permisos de administrador).
-2. Ejecútalo. Si Windows SmartScreen te muestra un aviso, haz clic en **Más información** y luego en **Ejecutar de
+2. Con el instalador: ejecútalo. Si Windows SmartScreen te muestra un aviso, haz clic en **Más información** y luego en **Ejecutar de
    todas formas**: la app es nueva y Microsoft todavía no la conoce.
 3. Mantén abierto tu software de iluminación:
    - **Logitech G**: abre G HUB, *Configuración*, y activa **«Allow games & applications to control my lighting»**.

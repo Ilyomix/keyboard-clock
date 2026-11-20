@@ -18,6 +18,10 @@
 </p>
 
 <p align="center">
+  <a href="https://apps.microsoft.com/detail/9N5M0SCJNPZ3"><img src="https://get.microsoft.com/images/fr%20dark.svg" width="200" alt="Obtenir sur le Microsoft Store"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/Ilyomix/keyboard-clock/releases/latest/download/KeyboardClockSetup.exe"><b>⬇ Télécharger pour Windows</b></a>
   &nbsp;·&nbsp; <a href="https://ilyomix.github.io/keyboard-clock/fr/"><b>Site web et démo en direct</b></a>
 </p>
@@ -72,9 +76,9 @@ rythme de votre **musique** et vous permet de **dessiner vos propres chiffres**.
 
 ## Installation
 
-1. Téléchargez **[KeyboardClockSetup.exe](https://github.com/Ilyomix/keyboard-clock/releases/latest/download/KeyboardClockSetup.exe)**
+1. Installez Keyboard Clock depuis le **[Microsoft Store](https://apps.microsoft.com/detail/9N5M0SCJNPZ3)** : Windows l'installe et le tient à jour. Ou téléchargez **[KeyboardClockSetup.exe](https://github.com/Ilyomix/keyboard-clock/releases/latest/download/KeyboardClockSetup.exe)**
    (Windows 10 ou 11, 64 bits, sans droits d'administrateur).
-2. Lancez-le. Si Windows SmartScreen affiche un avertissement, cliquez sur **Informations complémentaires**, puis sur
+2. Avec l'installateur : lancez-le. Si Windows SmartScreen affiche un avertissement, cliquez sur **Informations complémentaires**, puis sur
    **Exécuter quand même** : le logiciel est récent, Microsoft ne le connaît pas encore.
 3. Laissez votre logiciel d'éclairage ouvert :
    - **Logitech G** : ouvrez G HUB, *Paramètres*, et activez **Autoriser les jeux et les applications à contrôler mon

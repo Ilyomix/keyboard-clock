@@ -253,7 +253,7 @@ jobs:
           $policy = "[Code signing policy](https://github.com/Ilyomix/keyboard-clock/blob/main/CODE_SIGNING.md)"
           $note = if ($env:SIGN -eq "signpath") {
             "The Windows files are signed. Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/). $policy" } else {
-            "The Windows files are not code-signed yet, so SmartScreen may warn: click *More info → Run anyway*, or get Keyboard Clock from the Microsoft Store. $policy" }
+            "The Windows files are not code-signed yet, so SmartScreen may warn: click *More info → Run anyway*, or get Keyboard Clock from the [Microsoft Store](https://apps.microsoft.com/detail/9N5M0SCJNPZ3). $policy" }
           $note | Set-Content -Encoding utf8 build\release-notes.md
           Get-Content build\release-notes.md
 

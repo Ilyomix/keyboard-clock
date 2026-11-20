@@ -18,6 +18,10 @@
 </p>
 
 <p align="center">
+  <a href="https://apps.microsoft.com/detail/9N5M0SCJNPZ3"><img src="https://get.microsoft.com/images/pt-br%20dark.svg" width="200" alt="Baixar na Microsoft Store"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/Ilyomix/keyboard-clock/releases/latest/download/KeyboardClockSetup.exe"><b>⬇ Baixar para Windows</b></a>
   &nbsp;·&nbsp; <a href="https://ilyomix.github.io/keyboard-clock/pt/"><b>Site e demonstração ao vivo</b></a>
 </p>
@@ -71,9 +75,9 @@ permite que você **desenhe os seus próprios dígitos**.
 
 ## Instalação
 
-1. Baixe o **[KeyboardClockSetup.exe](https://github.com/Ilyomix/keyboard-clock/releases/latest/download/KeyboardClockSetup.exe)**
+1. Instale o Keyboard Clock pela **[Microsoft Store](https://apps.microsoft.com/detail/9N5M0SCJNPZ3)**: o Windows instala e mantém atualizado. Ou baixe o **[KeyboardClockSetup.exe](https://github.com/Ilyomix/keyboard-clock/releases/latest/download/KeyboardClockSetup.exe)**
    (Windows 10 ou 11, 64 bits, sem precisar de privilégios de administrador).
-2. Execute. Se o Windows SmartScreen exibir um aviso, clique em **Mais informações** e depois em **Executar assim
+2. Com o instalador: execute. Se o Windows SmartScreen exibir um aviso, clique em **Mais informações** e depois em **Executar assim
    mesmo**: o app é novo, então a Microsoft ainda não o conhece.
 3. Deixe o seu software de iluminação aberto:
    - **Logitech G**: abra o G HUB, vá em *Configurações* e ative **“Allow games & applications to control my lighting”**.
