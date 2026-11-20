@@ -35,6 +35,7 @@ from ctypes import wintypes
 __version__ = "0.1.0"
 APP = "Keyboard Clock"
 APP_ID = "KeyboardClock"
+APP_AUMID = "Ilyomix.KeyboardClock"          # who sends our notifications, for Windows
 REPO_URL = "https://github.com/Ilyomix/keyboard-clock"
 DATA_DIR = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), APP_ID)
 SETTINGS_PATH = os.path.join(DATA_DIR, "settings.json")
@@ -1750,6 +1751,7 @@ _sig(user32.AllowSetForegroundWindow, wt.BOOL, wt.DWORD)
 _sig(user32.GetWindowThreadProcessId, wt.DWORD, HANDLE, ctypes.POINTER(wt.DWORD))
 _sig(shell32.Shell_NotifyIconW, wt.BOOL, wt.DWORD, ctypes.POINTER(NOTIFYICONDATAW))
 _sig(shell32.SHAppBarMessage, ctypes.c_size_t, wt.DWORD, ctypes.POINTER(APPBARDATA))
+_sig(shell32.SetCurrentProcessExplicitAppUserModelID, ctypes.c_long, wt.LPCWSTR)
 _sig(k32.GetModuleHandleW, HANDLE, wt.LPCWSTR)
 _sig(k32.SetEvent, wt.BOOL, HANDLE)
 _sig(k32.CloseHandle, wt.BOOL, HANDLE)
@@ -2726,6 +2728,36 @@ def write_ico(path, paused=False, sizes=(16, 20, 24, 32, 48, 64, 256)):
         f.write(out + b"".join(d for _, d in images))
 
 
+def png_bytes(w, h, rgba):
+    def chunk(t, d):
+        return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
+
+    raw = b"".join(b"\x00" + bytes(rgba[y * w * 4:(y + 1) * w * 4]) for y in range(h))
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
+
+
+def set_app_identity():
+    """Our own name and icon on Windows notifications. Started as a script, the app is pythonw.exe, so Windows
+    would otherwise show Python's, or whichever app it last tied to pythonw."""
+    try:
+        import winreg
+        png = os.path.join(DATA_DIR, f"keyboard-clock-{__version__}.png")
+        if not os.path.exists(png):
+            os.makedirs(DATA_DIR, exist_ok=True)
+            bgra = icon_pixels(256)
+            rgba = bytearray(len(bgra))
+            rgba[0::4], rgba[1::4], rgba[2::4], rgba[3::4] = bgra[2::4], bgra[1::4], bgra[0::4], bgra[3::4]
+            with open(png, "wb") as f:
+                f.write(png_bytes(256, 256, rgba))
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, rf"Software\Classes\AppUserModelId\{APP_AUMID}") as k:
+            winreg.SetValueEx(k, "DisplayName", 0, winreg.REG_SZ, APP)
+            winreg.SetValueEx(k, "IconUri", 0, winreg.REG_SZ, png)
+        shell32.SetCurrentProcessExplicitAppUserModelID(APP_AUMID)
+    except OSError as e:
+        log(f"App identity not set: {e}")
+
+
 def ensure_icons():
     os.makedirs(DATA_DIR, exist_ok=True)
     paths = (os.path.join(DATA_DIR, f"keyboard-clock-{__version__}.ico"),
@@ -2805,6 +2837,11 @@ def cmd_uninstall():
     try:
         os.remove(START_MENU_LNK)
     except FileNotFoundError:
+        pass
+    try:
+        import winreg
+        winreg.DeleteKey(winreg.HKEY_CURRENT_USER, rf"Software\Classes\AppUserModelId\{APP_AUMID}")
+    except OSError:
         pass
     shutil.rmtree(DATA_DIR, ignore_errors=True)
     print(f"{APP} was stopped and removed from startup, the Start menu and %LOCALAPPDATA%\\{APP_ID}.")
@@ -3208,6 +3245,7 @@ class Tray:
         self.painter, self.balloon = None, None
         cx, cy = user32.GetSystemMetrics(49), user32.GetSystemMetrics(50)
         self.icons = (user32.LoadImageW(None, on, 1, cx, cy, 0x10), user32.LoadImageW(None, off, 1, cx, cy, 0x10))
+        self.big_icon = user32.LoadImageW(None, on, 1, 64, 64, 0x10)
         self._proc_ref = WNDPROC(self._proc)
         hinst = k32.GetModuleHandleW(None)
         wc = WNDCLASSEXW()
@@ -3268,6 +3306,7 @@ class Tray:
         if info:
             n.uFlags |= 0x10
             n.szInfoTitle, n.szInfo = info
+            n.dwInfoFlags, n.hBalloonIcon = 0x4 | 0x20, self.big_icon         # NIIF_USER | NIIF_LARGE_ICON: ours
         return n
 
     def refresh(self, info=None):
@@ -5926,6 +5965,7 @@ def main(argv=None):
     if args.background or sys.stdout is None:
         k32.FreeConsole()
         sys.stdout = sys.stderr = None
+    set_app_identity()
     sys.unraisablehook = lambda u: log(f"Error: {u.exc_value!r} in {getattr(u.object, '__qualname__', u.object)!r}")
     try:
         os.makedirs(DATA_DIR, exist_ok=True)
