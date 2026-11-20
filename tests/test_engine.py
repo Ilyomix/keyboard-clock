@@ -61,6 +61,36 @@ class Digits(unittest.TestCase):
         self.assertEqual(kc.classic_keys(m, "1", 1), ["F8", "9", "I", "J", "N"])
 
 
+class CustomFont(unittest.TestCase):
+    def test_areas_are_disjoint_and_hold_the_classic_digits(self):
+        for name in kc.MODELS:
+            m = kc.Model(name)
+            left, right = set(kc.digit_area(m, 0)), set(kc.digit_area(m, 1))
+            self.assertFalse(left & right, name)
+            for ch, (l, r) in kc.classic_font(m).items():
+                self.assertTrue(set(l) <= left and set(r) <= right, f"{name} {ch}")
+
+    def test_custom_digits_are_used_and_kept_in_their_area(self):
+        m = kc.Model("tkl-iso")
+        font = kc.classic_font(m)
+        font["1"] = [["F2", "3", "E", "D", "X", "Y"], ["F6", "8", "U", "J", "M", "E"]]   # Y and E: wrong side
+        s = kc.clean_settings({"display": {"font": "custom", "custom_font": font}})
+        self.assertEqual(kc.font_keys(m, "1", 0, s["display"]["custom_font"]), ["F2", "3", "E", "D", "X"])
+        self.assertEqual(kc.font_keys(m, "1", 1, s["display"]["custom_font"]), ["F6", "8", "U", "J", "M"])
+        r = kc.Renderer(m, s)
+        lit = {k for k, c in r.frame(r.tsecs + 1, WALL.replace(hour=11)).items()
+               if sum(c) and k not in kc.SECONDS_BLOCK}
+        self.assertEqual(lit, {"F2", "3", "E", "D", "X", "F6", "8", "U", "J", "M"})
+
+    def test_classic_is_used_when_the_font_is_classic_or_a_digit_is_missing(self):
+        m = kc.Model("tkl-iso")
+        custom = kc.clean_font({"1": [["F1"], ["F5"]], "x": 3, "2": "junk"})
+        self.assertEqual(list(custom), ["1"])
+        self.assertEqual(kc.font_keys(m, "2", 0, custom), kc.classic_keys(m, "2", 0))
+        s = kc.clean_settings({"display": {"font": "classic", "custom_font": {"1": [["F1"], ["F5"]]}}})
+        self.assertIsNone(kc.Renderer(m, s).custom_font)
+
+
 class Text(unittest.TestCase):
     def test_pixel_font_is_well_formed(self):
         for ch, g in kc.PIXEL.items():

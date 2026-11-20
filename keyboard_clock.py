@@ -285,6 +285,44 @@ def classic_keys(model, ch, pos):
     return keys
 
 
+# Custom digits (font editor): {"0": [[left digit keys], [right digit keys]], …}, keys by name.
+FONT_SPLIT = 6.0                    # keys centred left of this belong to the left digit
+FONT_RIGHT_END = 11.0               # the right digit stops before "[" / ";" / "/"
+
+
+def digit_area(model, pos):
+    """Keys a digit may use at `pos`: F1-F4 (left) or F5-F8 (right), and the number and letter rows on
+    its side. The two areas never overlap, so the left and right digits can't collide."""
+    keys = list(F_KEYS[pos])
+    for k, x0, x1, row, cx in model.grid:
+        if row and ((cx < FONT_SPLIT) if pos == 0 else (FONT_SPLIT <= cx < FONT_RIGHT_END)):
+            keys.append(k)
+    return list(dict.fromkeys(keys))
+
+
+def classic_font(model):
+    """The built-in digits as an editable font (the font editor starts from it)."""
+    return {ch: [classic_keys(model, ch, 0), classic_keys(model, ch, 1)] for ch in "0123456789"}
+
+
+def font_keys(model, ch, pos, custom=None):
+    """Keys of digit `ch` at `pos`, from the custom font when it defines that digit."""
+    if custom and ch in custom:
+        area = set(digit_area(model, pos))
+        return [k for k in custom[ch][pos] if k in area]
+    return classic_keys(model, ch, pos)
+
+
+def clean_font(v):
+    out = {}
+    if isinstance(v, dict):
+        for ch in "0123456789":
+            pair = v.get(ch)
+            if isinstance(pair, list) and len(pair) == 2 and all(isinstance(p, list) for p in pair):
+                out[ch] = [[k for k in dict.fromkeys(p) if isinstance(k, str) and k in KEY_CODES][:40] for p in pair]
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Pixel font for scrolling text: 5 rows (function keys to bottom letters), mostly 3 columns wide.
 # ---------------------------------------------------------------------------
@@ -477,7 +515,7 @@ DEFAULTS = {
              "hide_fullscreen": True, "hide_apps": [], "off_after": 0},
     "display": {"mode": "time", "sequence": [], "secs": 2.5, "transition": "fade", "transition_secs": 0.5,
                 "scroll_text": "{time} · {weekday} {date}", "scroll_speed": 5.0, "scroll_smooth": False, "hour12": False,
-                "leading_zero": True, "seconds": "block"},
+                "leading_zero": True, "seconds": "block", "font": "classic", "custom_font": {}},
     "look": {"theme": "neon", "style": "solid",
              "colors": {"hours": "#ff5900", "minutes": "#00ccff", "date": "#b36bff", "seconds": "#9a9a9a",
                         "text": "#ffffff"},
@@ -572,6 +610,8 @@ def clean_settings(raw):
             "hour12": di.get("hour12") is True,
             "leading_zero": di.get("leading_zero", True) is not False,
             "seconds": _choice(di.get("seconds"), SECONDS_STYLES, d["display"]["seconds"]),
+            "font": _choice(di.get("font"), ("classic", "custom"), "classic"),
+            "custom_font": clean_font(di.get("custom_font")),
         },
         "look": {
             "theme": lo["theme"] if isinstance(lo.get("theme"), str) else d["look"]["theme"],
@@ -697,10 +737,10 @@ def rasterize(model, spans, color_of):
     return out
 
 
-def digit_spans(model, text, role):
+def digit_spans(model, text, role, custom=None):
     spans = []
     for pos, ch in enumerate(text[:2]):
-        for k in classic_keys(model, ch, pos):
+        for k in font_keys(model, ch, pos, custom):
             for kk, x, y, w, h in model.rects:
                 if kk == k and y in ROW_YS[:5]:
                     spans.append((ROW_YS.index(y), x, x + w, role, pos))
@@ -722,6 +762,7 @@ class Renderer:
         self.trans = d["transition"]
         self.tsecs = 0.0 if self.trans == "none" else d["transition_secs"]
         self.speed = d["scroll_speed"]
+        self.custom_font = d["custom_font"] if d["font"] == "custom" else None
         lo = settings["look"]
         self.colors = {r: hex_color(c) for r, c in lo["colors"].items()}
         self.gradient = [hex_color(c) for c in lo["gradient"]]
@@ -771,7 +812,7 @@ class Renderer:
             if self.s["display"]["scroll_smooth"]:
                 return scroll_spans(cols, offset), 1.0, None
             return ("crisp", cols, math.floor(offset)), 1.0, None
-        spans = digit_spans(self.model, self._digits(item["show"], wall), item["show"])
+        spans = digit_spans(self.model, self._digits(item["show"], wall), item["show"], self.custom_font)
         T = self.tsecs
         if T <= 0:
             return spans, 1.0, None
