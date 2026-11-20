@@ -29,6 +29,11 @@ DOCS = os.path.join(ROOT, "docs")
 SITE = "https://ilyomix.github.io/keyboard-clock/"
 REPO = "https://github.com/Ilyomix/keyboard-clock"
 SETUP = REPO + "/releases/latest/download/KeyboardClockSetup.exe"
+STORE = "https://apps.microsoft.com/detail/9N5M0SCJNPZ3"
+# Microsoft's "Get it from Microsoft" badge in each language, and its text
+STORE_BADGES = {"en": "en-us", "fr": "fr", "es": "es", "de": "de", "it": "it", "pt": "pt-br"}
+STORE_ALTS = {"en": "Get it from Microsoft", "fr": "Obtenir sur le Microsoft Store", "es": "Obtener en Microsoft Store",
+              "de": "Im Microsoft Store herunterladen", "it": "Scarica da Microsoft Store", "pt": "Baixar na Microsoft Store"}
 GLOWBACK = "https://ilyomix.github.io/glowback/"
 AUTHOR_URL = "https://ilyomix.github.io/"
 ALL_LANGS = ["en", "fr", "es", "de", "it", "pt"]
@@ -295,7 +300,7 @@ def page(lang, T, all_t, template):
     app_ld = {"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Keyboard Clock",
               "description": T["description"], "inLanguage": lang, "url": here, "image": preview,
               "screenshot": f"{SITE}img/window-clock-{lang}.webp", "applicationCategory": "UtilitiesApplication",
-              "operatingSystem": "Windows 10, Windows 11", "softwareVersion": kc.__version__, "downloadUrl": SETUP,
+              "operatingSystem": "Windows 10, Windows 11", "softwareVersion": kc.__version__, "installUrl": STORE, "downloadUrl": SETUP,
               "softwareRequirements": "Logitech G HUB, Windows Dynamic Lighting or OpenRGB",
               "license": "https://opensource.org/licenses/MIT", "isAccessibleForFree": True,
               "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
@@ -346,7 +351,8 @@ def page(lang, T, all_t, template):
     values = dict(lang=lang, locale=LOCALES[lang], title=esc(T["title"]), description=esc(T["description"]),
                   og_title=esc(T["og_title"]), og_description=esc(T["og_description"]), here=here,
                   preview=preview, alternates=alternates, og_alt=og_alt, redirect=redirect, root=root,
-                  app_ld=ld(app_ld), faq_ld=ld(faq_ld), langs_menu=menu, lang_code=lang.upper(), repo=REPO, setup=SETUP,
+                  app_ld=ld(app_ld), faq_ld=ld(faq_ld), langs_menu=menu, lang_code=lang.upper(), repo=REPO, setup=SETUP, store=STORE,
+                  store_badge=f"https://get.microsoft.com/images/{STORE_BADGES[lang]}%20dark.svg", store_alt=STORE_ALTS[lang],
                   steps=steps, feats=feats, shots=shots, tabs=tabs, install=install, install_more=install_more,
                   works=works, langs_foot=langs_foot, logo=logo, yes=yes, no=no, faq=faq, themes=themes,
                   keyboard=demo_svg(T["demo_label"]), glowback=GLOWBACK, author=AUTHOR_URL, version=kc.__version__,
