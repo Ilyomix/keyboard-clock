@@ -1,6 +1,5 @@
 """Engine tests: run with `python -m unittest` from the repository root."""
 import datetime as dt
-import json
 import os
 import sys
 import tempfile
@@ -105,35 +104,6 @@ class Text(unittest.TestCase):
         self.assertTrue(cols)
         self.assertEqual(kc.plain_upper("Août"), "AOUT")
 
-    def test_templates(self):
-        runs = kc.template_runs("{time} {weekday} {date}", WALL, "fr")
-        self.assertEqual("".join(t for t, _ in runs), "13:37 VEN 20 NOV")
-        self.assertEqual(kc.template_runs("{date}", WALL, "en"), [("NOV 20", "date")])
-        self.assertEqual("".join(t for t, _ in kc.template_runs("{time}", WALL, "en", hour12=True)), "01:37")
-        self.assertEqual("".join(t for t, _ in kc.template_runs("{time}", WALL, "en", True, zero=False)), "1:37")
-
-    def test_scroll_coverage_is_smooth(self):
-        m = kc.Model("tkl-iso")
-        color = lambda role, n, x: (255, 255, 255)
-        cols = [((1, 1, 1, 1, 1), "text", 0)]
-        whole = kc.rasterize(m, kc.scroll_spans(cols, 5.0), color)
-        half = kc.rasterize(m, kc.scroll_spans(cols, 5.5), color)
-        self.assertAlmostEqual(whole["5"][3], 1.0)              # number row: key "5" spans 5-6
-        self.assertAlmostEqual(half["5"][3], 0.5)
-        self.assertAlmostEqual(half["6"][3], 0.5)
-        self.assertIn("T", whole)                               # row shifted half a key: T spans 5.5-6.5
-
-    def test_crisp_scroll_lights_whole_keys(self):
-        m = kc.Model("tkl-iso")
-        color = lambda role, n, x: (255, 255, 255)
-        cols = kc.text_columns([("13:37 VEN 20 NOV", "text")])
-        for offset in range(-40, 16):
-            for key, (r, g, b, a) in kc.scroll_crisp(m, cols, offset, color).items():
-                if key not in ("Tab", "Caps", "LShift", "Backspace", "Enter", "RShift", "#"):
-                    self.assertEqual(a, 1.0, f"{key} at {offset}")
-        column = {k for k in kc.scroll_crisp(m, [((1, 1, 1, 1, 1), "text", 0)], 2, color)}
-        self.assertEqual(column, {"F1", "2", "W", "S", "X"})     # the key column under F1 (QWERTY names)
-
 
 class Rendering(unittest.TestCase):
     def setUp(self):
@@ -143,7 +113,7 @@ class Rendering(unittest.TestCase):
     def test_frames_cover_every_key_with_valid_colors(self):
         for theme in kc.THEMES:
             s = kc.apply_theme(self.s, theme)
-            for mode in ("time", "time_date", "scroll", "mixed"):
+            for mode in ("time", "time_date"):
                 s2 = kc.clean_settings(kc.merge(s, {"display": {"mode": mode}}))
                 r = kc.Renderer(self.m, s2)
                 for t in (0.0, 0.3, 1.5, 3.2, 7.9):
@@ -210,6 +180,88 @@ class Rendering(unittest.TestCase):
         self.assertGreater(sum(1 for c in f.values() if sum(c)), 5)
 
 
+class _Stop:
+    h = None
+
+    def wait(self, s):
+        return True
+
+
+class Timers(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.clock = kc.Clock(_Stop(), settings_path=os.path.join(self.dir.name, "settings.json"))
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_timer_counts_down_then_flashes_then_stops_on_input(self):
+        c = self.clock
+        c.start_timer(2)
+        now = c.timer["end"] - 90
+        v = c._timer_tick(now, idle=500)
+        self.assertEqual(round(v["left"]), 90)
+        self.assertIsNone(v["done"])
+        v = c._timer_tick(c.timer["end"] + 0.1, idle=500)
+        self.assertIsNotNone(v["done"])
+        self.assertIsNone(c._timer_tick(c.timer["done_at"] + 3, idle=0.2))     # a key pressed: it stops
+
+    def test_pomodoro_goes_from_work_to_break_to_work(self):
+        c = self.clock
+        c.start_pomodoro()
+        self.assertEqual((c.timer["phase"], c.timer["round"]), ("work", 1))
+        end = c.timer["end"]
+        c._timer_tick(end + 0.1, idle=500)
+        c._timer_tick(end + 5, idle=500)
+        self.assertEqual(c.timer["phase"], "short")
+        end = c.timer["end"]
+        c._timer_tick(end + 0.1, idle=500)
+        c._timer_tick(end + 5, idle=500)
+        self.assertEqual((c.timer["phase"], c.timer["round"]), ("work", 2))
+
+    def test_alarm_fires_once_on_its_days_and_stops_on_input(self):
+        c = self.clock
+        c.apply(kc.clean_settings({"alarms": [{"time": "07:30", "days": [4], "color": "#00ff00"}]}))
+        friday, saturday = WALL.replace(hour=7, minute=30), WALL.replace(day=21, hour=7, minute=30)
+        c._alarm_check(100.0, saturday)
+        self.assertIsNone(c.alarm)
+        c._alarm_check(100.0, friday)
+        self.assertEqual(c.alarm["color"], "#00ff00")
+        c.alarm = None
+        c._alarm_check(130.0, friday)                                   # same minute: not again
+        self.assertIsNone(c.alarm)
+        c._alarm_check(100.0, friday.replace(day=27))
+        self.assertIsNotNone(c._alarm_tick(105.0, idle=50))
+        self.assertIsNone(c._alarm_tick(110.0, idle=0.1))
+
+    def test_timer_and_alarm_frames(self):
+        m = kc.Model("tkl-iso")
+        r = kc.Renderer(m, kc.clean_settings({}))
+        timer = {"left": 125.0, "total": 600.0, "color": "#ff2e63", "done": None}
+        f = r.frame(1.0, WALL, extra={"timer": timer})
+        lit = {k for k, c in f.items() if sum(c)}
+        self.assertTrue(set(kc.classic_keys(m, "0", 0)) <= lit and set(kc.classic_keys(m, "3", 1)) <= lit)
+        self.assertIn("LCtrl", lit)                                     # the bar of the time left
+        self.assertFalse(lit & set(kc.SECONDS_BLOCK))
+        over = r.frame(1.0, WALL, extra={"timer": dict(timer, left=0.0, done=0.0)})
+        self.assertTrue(all(sum(c) > 0 for c in over.values()))
+        alarm = {"for": 2.0, "color": "#ff1a1a"}
+        self.assertTrue(all(sum(c) > 0 for c in r.frame(1.0, WALL, extra={"alarm": alarm}).values()))
+
+    def test_music_background(self):
+        class Music:
+            silent, loud, pulse = False, 0.8, 0.5
+            level = [1.0] * 4 + [0.0] * 10
+        m = kc.Model("tkl-iso")
+        for style in kc.MUSIC_STYLES:
+            s = kc.clean_settings({"look": {"background": {"mode": "music", "music_style": style, "level": 80}}})
+            f = kc.Renderer(m, s).frame(1.0, WALL, music=Music())
+            self.assertGreater(sum(f["LCtrl"]), 0, style)
+        s = kc.clean_settings({"look": {"background": {"mode": "music", "music_style": "spectrum", "level": 80}}})
+        f = kc.Renderer(m, s).frame(1.0, WALL, music=Music())
+        self.assertEqual(f["F12"], (0, 0, 0))                            # treble bands are silent here
+
+
 class Settings(unittest.TestCase):
     def test_defaults_are_clean(self):
         self.assertEqual(kc.clean_settings({}), kc.clean_settings(kc.clean_settings({})))
@@ -241,10 +293,11 @@ class Settings(unittest.TestCase):
 
     def test_custom_sequence(self):
         s = kc.clean_settings({"display": {"mode": "custom", "sequence": [
-            {"show": "day", "secs": 3}, {"scroll": "HELLO"}, {"show": "nope"}, "junk"]}})
-        self.assertEqual(s["display"]["sequence"], [{"show": "day", "secs": 3}, {"scroll": "HELLO"}])
+            {"show": "day", "secs": 3}, {"scroll": "HELLO"}, {"show": "nope"}, "junk", {"show": "month"}]}})
+        self.assertEqual(s["display"]["sequence"], [{"show": "day", "secs": 3}, {"show": "month", "secs": 2.5}])
         r = kc.Renderer(kc.Model("tkl-iso"), s)
         self.assertEqual(len(r.items), 2)
+        self.assertEqual(kc.clean_settings({"display": {"mode": "scroll"}})["display"]["mode"], "time")
 
     def test_night_hours(self):
         n = {"on": True, "from": "22:00", "to": "07:00"}

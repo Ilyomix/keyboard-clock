@@ -13,6 +13,7 @@ G HUB back-end. Zero dependencies: Python 3.8+ standard library and Windows.
 """
 
 import argparse
+import cmath
 import colorsys
 import ctypes
 import datetime as dt
@@ -28,6 +29,7 @@ import threading
 import time
 import unicodedata
 import zlib
+from array import array
 from ctypes import wintypes
 
 __version__ = "0.1.0"
@@ -345,7 +347,6 @@ PIXEL = {
     "°": ["###", "#.#", "###", "...", "..."], "(": [".#", "#.", "#.", "#.", ".#"], ")": ["#.", ".#", ".#", ".#", "#."],
     "&": [".#.", "#.#", ".#.", "#.#", ".##"], "=": ["...", "###", "...", "###", "..."], "_": ["...", "...", "...", "...", "###"],
 }
-SCROLL_ROW_SHIFT = (0.0, 0.0, 0.5, 0.75, 1.25)   # each row follows the staggered key columns (1, Q, A, Z…)
 EMPTY_COL = (0, 0, 0, 0, 0)
 
 
@@ -373,61 +374,10 @@ def text_columns(runs):
     return cols
 
 
-def scroll_crisp(model, cols, offset, color_of):
-    """Text moved by whole key columns: each key shows the pixel column(s) right under it, so the
-    letters stay sharp (F5-F8, half a key off, and wide keys such as Tab included)."""
-    out = {}
-    for key, x0, x1, row, cx in model.grid:
-        s = SCROLL_ROW_SHIFT[row]
-        c0 = math.floor(x0 - s + 0.5)
-        c1 = max(c0 + 1, math.floor(x1 - s + 0.5))
-        hits = 0
-        cr = cg = cb = 0.0
-        for c in range(c0, c1):
-            i = c - offset
-            if 0 <= i < len(cols) and cols[i][0][row]:
-                _, role, n = cols[i]
-                col = color_of(role, n, cx)
-                hits += 1
-                cr += col[0]
-                cg += col[1]
-                cb += col[2]
-        if hits:
-            out[key] = (cr / hits, cg / hits, cb / hits, hits / (c1 - c0))
-    return out
-
-
-def scroll_spans(cols, offset):
-    """Spans (row, x0, x1, role, n) for text whose first column sits at x = `offset` (key units)."""
-    spans = []
-    for c, (bits, role, n) in enumerate(cols):
-        x = offset + c
-        if x + 2 < 0 or x - 2 > MAIN_W:
-            continue
-        for r in range(5):
-            if bits[r]:
-                x0 = x + SCROLL_ROW_SHIFT[r]
-                spans.append((r, x0, x0 + 1, role, n))
-    return spans
-
-
 # ---------------------------------------------------------------------------
-# Dates in six languages
+# Languages
 # ---------------------------------------------------------------------------
 LANGS = ("en", "fr", "es", "de", "it", "pt")
-WEEKDAYS = {
-    "en": "MON TUE WED THU FRI SAT SUN", "fr": "LUN MAR MER JEU VEN SAM DIM",
-    "es": "LUN MAR MIE JUE VIE SAB DOM", "de": "MO DI MI DO FR SA SO",
-    "it": "LUN MAR MER GIO VEN SAB DOM", "pt": "SEG TER QUA QUI SEX SAB DOM",
-}
-MONTHS = {
-    "en": "JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC",
-    "fr": "JANV FEVR MARS AVR MAI JUIN JUIL AOUT SEPT OCT NOV DEC",
-    "es": "ENE FEB MAR ABR MAY JUN JUL AGO SEP OCT NOV DIC",
-    "de": "JAN FEB MAERZ APR MAI JUNI JULI AUG SEPT OKT NOV DEZ",
-    "it": "GEN FEB MAR APR MAG GIU LUG AGO SET OTT NOV DIC",
-    "pt": "JAN FEV MAR ABR MAI JUN JUL AGO SET OUT NOV DEZ",
-}
 
 
 def detect_lang():
@@ -443,40 +393,17 @@ def hour_text(wall, hour12, zero):
     return f"{h:02d}" if zero else f"{h:2d}"
 
 
-def template_runs(template, wall, lang, hour12=False, zero=True):
-    """Expands {time} {hours} {minutes} {seconds} {day} {month} {month_name} {weekday} {year} {date}
-    {ampm} into colored runs [(text, role)]."""
-    lang = lang if lang in LANGS else "en"
-    day = f"{wall.day:02d}" if zero else str(wall.day)
-    month_name = MONTHS[lang].split()[wall.month - 1]
-    date = [(f"{month_name} {wall.day}" if lang == "en" else f"{day} {month_name}", "date")]
-    tokens = {
-        "time": [(hour_text(wall, hour12, zero).strip(), "hours"), (":", "text"), (f"{wall.minute:02d}", "minutes")],
-        "hours": [(hour_text(wall, hour12, zero).strip(), "hours")], "minutes": [(f"{wall.minute:02d}", "minutes")],
-        "seconds": [(f"{wall.second:02d}", "seconds")], "day": [(day, "date")], "month": [(f"{wall.month:02d}", "date")],
-        "month_name": [(month_name, "date")], "weekday": [(WEEKDAYS[lang].split()[wall.weekday()], "date")],
-        "year": [(str(wall.year), "date")], "date": date, "ampm": [("AM" if wall.hour < 12 else "PM", "text")],
-    }
-    runs, pos = [], 0
-    for m in re.finditer(r"\{(\w+)\}", template):
-        if m.start() > pos:
-            runs.append((template[pos:m.start()], "text"))
-        runs += tokens.get(m.group(1), [(m.group(0), "text")])
-        pos = m.end()
-    if pos < len(template):
-        runs.append((template[pos:], "text"))
-    return runs
-
-
 # ---------------------------------------------------------------------------
 # Settings
 # ---------------------------------------------------------------------------
-DISPLAY_MODES = ("time", "time_date", "scroll", "mixed", "custom")
+DISPLAY_MODES = ("time", "time_date", "custom")
 DIGIT_ITEMS = ("hours", "minutes", "seconds", "day", "month")
 TRANSITIONS = ("fade", "slide", "wipe", "dissolve", "none")
 SECONDS_STYLES = ("block", "bar", "numpad", "beat", "off")
 STYLES = ("solid", "gradient", "flow", "rainbow", "daytime", "digits")
 BACKGROUNDS = ("off", "dim", "gradient", "breathe", "twinkle", "music")
+MUSIC_STYLES = ("pulse", "spectrum")
+ALARM_COLOR = "#ff1a1a"
 CHIMES = ("off", "hour", "half")
 WHEN = ("idle", "always", "manual")
 NIGHT_ACTIONS = ("dim", "red", "off")
@@ -507,15 +434,19 @@ DEFAULTS = {
     "show": {"when": "idle", "delay": 60, "on_lock": True, "hotkey": "Ctrl+Alt+H",
              "hide_fullscreen": True, "hide_apps": [], "off_after": 0},
     "display": {"mode": "time", "sequence": [], "secs": 2.5, "transition": "fade", "transition_secs": 0.5,
-                "scroll_text": "{time} · {weekday} {date}", "scroll_speed": 5.0, "scroll_smooth": False, "hour12": False,
+                "hour12": False,
                 "leading_zero": True, "seconds": "block", "font": "classic", "custom_font": {}},
     "look": {"theme": "neon", "style": "solid",
              "colors": {"hours": "#ff5900", "minutes": "#00ccff", "date": "#b36bff", "seconds": "#9a9a9a",
                         "text": "#ffffff"},
              "gradient": ["#ff5900", "#ff2e63", "#00ccff"], "digit_colors": ["#ff5900", "#00ccff"],
-             "background": {"mode": "off", "color": "#1e2a78", "level": 25}, "chime": "hour", "brightness": 100},
+             "background": {"mode": "off", "color": "#1e2a78", "level": 25, "music_style": "spectrum",
+                            "sensitivity": 50}, "chime": "hour", "brightness": 100},
     "night": {"on": False, "from": "22:00", "to": "07:00", "action": "dim", "brightness": 30},
     "keyboard": {"backend": "auto", "model": "auto"},
+    "timer": {"minutes": 10, "work": 25, "short": 5, "long": 15, "rounds": 4, "color": "#ff2e63",
+              "break_color": "#00e08a"},
+    "alarms": [],
     "check_updates": True,
 }
 
@@ -558,9 +489,21 @@ def clean_sequence(seq):
             continue
         if it.get("show") in DIGIT_ITEMS:
             out.append({"show": it["show"], "secs": _num(it.get("secs"), 2.5, 0.5, 60)})
-        elif isinstance(it.get("scroll"), str) and it["scroll"].strip():
-            out.append({"scroll": it["scroll"][:200]})
         if len(out) >= 16:
+            break
+    return out
+
+
+def clean_alarms(v):
+    out = []
+    for a in v if isinstance(v, list) else []:
+        if not isinstance(a, dict):
+            continue
+        days = sorted({d for d in a.get("days", []) if isinstance(d, int) and not isinstance(d, bool) and 0 <= d <= 6}) \
+            if isinstance(a.get("days"), list) else []
+        out.append({"on": a.get("on", True) is not False, "time": _hhmm(a.get("time"), "07:00"), "days": days,
+                    "color": color_hex(hex_color(a.get("color"), hex_color(ALARM_COLOR)))})
+        if len(out) >= 12:
             break
     return out
 
@@ -574,7 +517,8 @@ def clean_settings(raw):
         v = raw.get(name)
         return v if isinstance(v, dict) else {}
 
-    sh, di, lo, ni, kb = sub("show"), sub("display"), sub("look"), sub("night"), sub("keyboard")
+    sh, di, lo, ni, kb, ti = sub("show"), sub("display"), sub("look"), sub("night"), sub("keyboard"), sub("timer")
+    dt_ = d["timer"]
     bg = lo.get("background") if isinstance(lo.get("background"), dict) else {}
     dbg = d["look"]["background"]
     hide_apps = [a.strip().lower() for a in sh.get("hide_apps", []) if isinstance(a, str) and a.strip()][:32] \
@@ -598,10 +542,6 @@ def clean_settings(raw):
             "secs": _num(di.get("secs"), d["display"]["secs"], 0.5, 60),
             "transition": _choice(di.get("transition"), TRANSITIONS, d["display"]["transition"]),
             "transition_secs": _num(di.get("transition_secs"), d["display"]["transition_secs"], 0.1, 3),
-            "scroll_text": di["scroll_text"][:200] if isinstance(di.get("scroll_text"), str) and di["scroll_text"].strip()
-            else d["display"]["scroll_text"],
-            "scroll_speed": _num(di.get("scroll_speed"), d["display"]["scroll_speed"], 1, 20),
-            "scroll_smooth": di.get("scroll_smooth") is True,
             "hour12": di.get("hour12") is True,
             "leading_zero": di.get("leading_zero", True) is not False,
             "seconds": _choice(di.get("seconds"), SECONDS_STYLES, d["display"]["seconds"]),
@@ -618,6 +558,8 @@ def clean_settings(raw):
                 "mode": _choice(bg.get("mode"), BACKGROUNDS, dbg["mode"]),
                 "color": color_hex(hex_color(bg.get("color"), hex_color(dbg["color"]))),
                 "level": _num(bg.get("level"), dbg["level"], 0, 100),
+                "music_style": _choice(bg.get("music_style"), MUSIC_STYLES, dbg["music_style"]),
+                "sensitivity": _num(bg.get("sensitivity"), dbg["sensitivity"], 0, 100),
             },
             "chime": _choice(lo.get("chime"), CHIMES, d["look"]["chime"]),
             "brightness": _num(lo.get("brightness"), d["look"]["brightness"], 5, 100),
@@ -633,6 +575,16 @@ def clean_settings(raw):
             "backend": _choice(kb.get("backend"), ("auto", "logitech"), "auto"),
             "model": _choice(kb.get("model"), ("auto",) + MODELS, "auto"),
         },
+        "timer": {
+            "minutes": int(_num(ti.get("minutes"), dt_["minutes"], 1, 180)),
+            "work": int(_num(ti.get("work"), dt_["work"], 1, 120)),
+            "short": int(_num(ti.get("short"), dt_["short"], 1, 60)),
+            "long": int(_num(ti.get("long"), dt_["long"], 1, 60)),
+            "rounds": int(_num(ti.get("rounds"), dt_["rounds"], 1, 12)),
+            "color": color_hex(hex_color(ti.get("color"), hex_color(dt_["color"]))),
+            "break_color": color_hex(hex_color(ti.get("break_color"), hex_color(dt_["break_color"]))),
+        },
+        "alarms": clean_alarms(raw.get("alarms")),
     }
 
 
@@ -756,7 +708,6 @@ class Renderer:
         self.items = self._sequence(d)
         self.trans = d["transition"]
         self.tsecs = 0.0 if self.trans == "none" else d["transition_secs"]
-        self.speed = d["scroll_speed"]
         self.custom_font = d["custom_font"] if d["font"] == "custom" else None
         lo = settings["look"]
         self.colors = {r: hex_color(c) for r, c in lo["colors"].items()}
@@ -767,14 +718,9 @@ class Renderer:
     def _sequence(d):
         secs = d["secs"]
         if d["mode"] == "custom" and d["sequence"]:
-            return [dict(it) if "scroll" in it else {"show": it["show"], "secs": it["secs"]} for it in d["sequence"]]
+            return [{"show": it["show"], "secs": it["secs"]} for it in d["sequence"]]
         if d["mode"] == "time_date":
             return [{"show": w, "secs": secs} for w in ("hours", "minutes", "day", "month")]
-        if d["mode"] == "scroll":
-            return [{"scroll": d["scroll_text"]}]
-        if d["mode"] == "mixed":
-            return [{"show": w, "secs": secs} for w in ("hours", "minutes", "hours", "minutes")] + \
-                   [{"scroll": "{weekday} {date}"}]
         return [{"show": "hours", "secs": secs}, {"show": "minutes", "secs": secs}]
 
     # -- content --------------------------------------------------------------
@@ -785,13 +731,7 @@ class Renderer:
         value = {"minutes": wall.minute, "seconds": wall.second, "day": wall.day, "month": wall.month}[what]
         return f"{value:02d}" if what in ("minutes", "seconds") or d["leading_zero"] else f"{value:2d}"
 
-    def _columns(self, item, wall):
-        d = self.s["display"]
-        return text_columns(template_runs(item["scroll"], wall, self.lang, d["hour12"], d["leading_zero"]))
-
     def _duration(self, item, wall):
-        if "scroll" in item:
-            return (MAIN_W + len(self._columns(item, wall))) / self.speed
         return item["secs"] + 2 * self.tsecs
 
     def content(self, t, wall):
@@ -802,11 +742,6 @@ class Renderer:
             if u < dur:
                 break
             u -= dur
-        if "scroll" in item:
-            cols, offset = self._columns(item, wall), MAIN_W - self.speed * u
-            if self.s["display"]["scroll_smooth"]:
-                return scroll_spans(cols, offset), 1.0, None
-            return ("crisp", cols, math.floor(offset)), 1.0, None
         spans = digit_spans(self.model, self._digits(item["show"], wall), item["show"], self.custom_font)
         T = self.tsecs
         if T <= 0:
@@ -850,11 +785,13 @@ class Renderer:
         return lambda role, n, x: colors[ROLE_COLOR.get(role, "text")]
 
     # -- layers ---------------------------------------------------------------
-    def background(self, t, night_red):
+    def background(self, t, night_red, music=None):
         bg = self.s["look"]["background"]
         mode = bg["mode"]
-        if mode in ("off", "music") or night_red:
+        if mode == "off" or night_red:
             return {}
+        if mode == "music":
+            return self.music_background(bg, music)
         color, level = hex_color(bg["color"]), bg["level"] / 100
         m = self.model
         out = {}
@@ -876,6 +813,57 @@ class Renderer:
             if f > 0.0005:
                 out[k] = tuple(c * f for c in color)
         return out
+
+    def music_background(self, bg, music):
+        """Pulse: the keys breathe with the beat. Spectrum: an equaliser, bass on the left, rising from the bottom."""
+        if music is None or music.silent:
+            return {}
+        m, level = self.model, bg["level"] / 100
+        if bg["music_style"] == "pulse":
+            f = perceived(level * (0.2 + 0.8 * min(1.0, music.loud * 0.8 + music.pulse * 0.6)))
+            c = tuple(v * f for v in hex_color(bg["color"]))
+            return {k: c for k in m.keys}
+        n, out = len(music.level), {}
+        for k in m.keys:
+            x, y = m.center[k]
+            height = (m.height - y) / m.height                         # 0 at the bottom, 1 at the top
+            v = music.level[min(n - 1, int(x / m.width * n))]
+            a = 1.0 if height <= v else max(0.0, 1 - (height - v) * 5)
+            if a > 0:
+                f = perceived(level * a)
+                out[k] = tuple(c * f for c in gradient_at(self.gradient, height))
+        return out
+
+    def timer_view(self, timer, wall):
+        """Minutes left in big digits (seconds in the last minute), a bar of the time left on the bottom row,
+        then the whole keyboard flashing when it is over."""
+        m = self.model
+        color = hex_color(timer["color"])
+        left = timer["left"]
+        content, overlay = {}, {}
+        if timer["done"] is None:
+            value = math.ceil(left / 60) if left >= 60 else math.ceil(left)
+            text = f"{min(99, value):02d}"
+            spans = digit_spans(m, text, "timer", self.custom_font)
+            fade = 1.0 if left >= 60 else 0.55 + 0.45 * (0.5 + 0.5 * math.cos(2 * math.pi * left))
+            content = {k: (*color, a * fade) for k, (r, g, b, a) in rasterize(m, spans, lambda *a: color).items()}
+            length = left / max(1.0, timer["total"]) * MAIN_W
+            for k, x, y, w, h in m.rects:
+                if y == ROW_YS[5] and x < MAIN_W:
+                    a = min(1.0, max(0.0, (length - x) / w))
+                    if a > 0:
+                        content[k] = (*color, perceived(a))
+        else:
+            a = 0.15 + 0.85 * (0.5 + 0.5 * math.cos(2 * math.pi * 2 * timer["done"]))
+            overlay = {k: (*color, a) for k in m.keys}
+        return content, overlay
+
+    def alarm_view(self, alarm):
+        """The whole keyboard flashes the alarm's color."""
+        m, u = self.model, alarm["for"]
+        color = hex_color(alarm["color"])
+        a = 0.2 + 0.8 * (0.5 + 0.5 * math.cos(2 * math.pi * 1.5 * u))
+        return {}, {k: (*color, a) for k in m.keys}
 
     def seconds(self, wall, night_red):
         style = self.s["display"]["seconds"]
@@ -917,8 +905,8 @@ class Renderer:
                 out[k] = (*hsv(x / m.width * 0.8 + u / 3), a)
         return out
 
-    def frame(self, t, wall, chime_u=None, night=False, dark=False):
-        """{key: (r, g, b)} 0-255 for every key of the model."""
+    def frame(self, t, wall, chime_u=None, night=False, dark=False, extra=None, music=None):
+        """{key: (r, g, b)} 0-255 for every key of the model. extra: {"timer": …} or {"alarm": …}."""
         m = self.model
         if dark:
             return {k: (0, 0, 0) for k in m.keys}
@@ -928,23 +916,25 @@ class Renderer:
         if night and ns["action"] in ("dim", "red"):
             bright *= ns["brightness"] / 100
         gain = perceived(bright)
-        bg = self.background(t, night_red)
-        if chime_u is not None:
+        bg = self.background(t, night_red, music)
+        extra = extra or {}
+        if extra.get("alarm"):
+            content, overlay = self.alarm_view(extra["alarm"])
+        elif extra.get("timer"):
+            content, overlay = self.timer_view(extra["timer"], wall)
+        elif chime_u is not None:
             content = {}
             overlay = self.chime(chime_u)
         else:
             spans, fade, mask = self.content(t, wall)
             color_of = self.color_fn(t, wall, night_red)
-            if isinstance(spans, tuple):                  # ("crisp", columns, whole-key offset)
-                content = scroll_crisp(m, spans[1], spans[2], color_of)
-            else:
-                content = rasterize(m, spans, color_of)
+            content = rasterize(m, spans, color_of)
             if fade < 1 or mask is not None:
                 f = perceived(fade)
                 content = {k: (r, g, b, a * f * (mask(k, m.center[k][0]) if mask else 1.0))
                            for k, (r, g, b, a) in content.items()}
             overlay = {}
-        secs = self.seconds(wall, night_red)
+        secs = {} if extra else self.seconds(wall, night_red)
         out = {}
         for k in m.keys:
             c = bg.get(k, BLACK)
@@ -1188,6 +1178,11 @@ class Clock:
         self.notify = lambda: None
         self.new_version = self.update_page = self.update_info = None
         self.lang = self.settings["lang"] or detect_lang()
+        self.timer = None                # {"kind": timer|pomodoro, "phase", "total", "end", "round", "done_at"}
+        self.alarm = None                # {"start", "color", "time"}
+        self._fired = {}
+        self._capture = self._analyser = None
+        self._cap_retry = self._cap_last = self._cap_used = 0.0
 
     def _mtime(self):
         try:
@@ -1224,6 +1219,114 @@ class Clock:
         self.override = (now + seconds, frame_fn, start)
         log(f"Show on the keyboard for {seconds:g} s requested.")
 
+    # ---- timer and Pomodoro
+    def start_timer(self, minutes=None):
+        secs = 60 * (minutes or self.settings["timer"]["minutes"])
+        self.timer = dict(kind="timer", phase="timer", total=secs, end=time.monotonic() + secs, round=1, done_at=None)
+        log(f"Timer: {secs // 60} min")
+        self.notify()
+
+    def start_pomodoro(self):
+        self._pomodoro("work", 1)
+
+    def _pomodoro(self, phase, rnd):
+        secs = 60 * self.settings["timer"][phase]
+        self.timer = dict(kind="pomodoro", phase=phase, total=secs, end=time.monotonic() + secs, round=rnd, done_at=None)
+        log(f"Pomodoro: {phase}, round {rnd}")
+        self.notify()
+
+    def stop_timer(self):
+        self.timer = None
+        self.notify()
+
+    def timer_left(self):
+        return max(0.0, self.timer["end"] - time.monotonic()) if self.timer else 0.0
+
+    def _timer_tick(self, now, idle):
+        tm = self.timer
+        if not tm:
+            return None
+        if tm["done_at"] is None and now >= tm["end"]:
+            tm["done_at"] = now
+            log("Timer over" if tm["kind"] == "timer" else f"Pomodoro: {tm['phase']} over")
+            self.notify()
+        if tm["done_at"] is not None:
+            since = now - tm["done_at"]
+            if tm["kind"] == "pomodoro" and since >= 4:
+                rounds = self.settings["timer"]["rounds"]
+                if tm["phase"] == "work":
+                    self._pomodoro("long" if tm["round"] >= rounds else "short", tm["round"])
+                elif tm["phase"] == "short":
+                    self._pomodoro("work", tm["round"] + 1)
+                else:
+                    self.stop_timer()
+                return self.timer and self._timer_view(now)
+            if tm["kind"] == "timer" and (since > 30 or (since > 1 and idle < since - 0.5)):
+                self.stop_timer()                                   # a key or the mouse stops the flashing
+                return None
+        return self._timer_view(now)
+
+    def _timer_view(self, now):
+        tm = self.timer
+        t = self.settings["timer"]
+        color = t["break_color"] if tm["phase"] in ("short", "long") else t["color"]
+        return dict(left=max(0.0, tm["end"] - now), total=tm["total"], color=color,
+                    done=None if tm["done_at"] is None else now - tm["done_at"])
+
+    # ---- alarms
+    def _alarm_check(self, now, wall):
+        hhmm = f"{wall.hour:02d}:{wall.minute:02d}"
+        stamp = (wall.date(), hhmm)
+        for i, a in enumerate(self.settings["alarms"]):
+            if a["on"] and a["time"] == hhmm and (not a["days"] or wall.weekday() in a["days"]) \
+                    and self._fired.get(i) != stamp:
+                self._fired[i] = stamp
+                self.alarm = dict(start=now, color=a["color"], time=a["time"])
+                log(f"Alarm {hhmm}")
+                self.notify()
+
+    def _alarm_tick(self, now, idle):
+        al = self.alarm
+        if not al:
+            return None
+        since = now - al["start"]
+        if since > 60 or (since > 1.5 and idle < since - 1.0):          # a key or the mouse stops it
+            self.alarm = None
+            self.notify()
+            return None
+        return dict(al, **{"for": since})
+
+    # ---- music
+    def _music(self, wanted, now):
+        if not wanted:
+            if self._capture and now - self._cap_used > 10:
+                self._capture.close()
+                self._capture = self._analyser = None
+            return None
+        self._cap_used = now
+        if self._capture is None:
+            if now < self._cap_retry:
+                return None
+            try:
+                com_init()
+                self._capture = SoundCapture()
+                self._analyser = MusicAnalyser(self._capture.rate)
+                self._cap_last = now
+            except Exception as e:
+                log(f"Sound capture unavailable ({e})")
+                self._capture, self._cap_retry = None, now + 10
+                return None
+        try:
+            samples = self._capture.read()
+        except OSError:
+            self._capture.close()
+            self._capture = self._analyser = None
+            return None
+        self._analyser.update(samples, max(0.001, now - self._cap_last),
+                              self.settings["look"]["background"]["sensitivity"], now)
+        self._cap_last = now
+        return self._analyser
+
     def pause(self, seconds):
         self.paused_until = time.monotonic() + seconds if seconds else 0.0
         self.notify()
@@ -1254,6 +1357,8 @@ class Clock:
                     locked = sh["on_lock"] and session_locked()
                     full = sh["hide_fullscreen"] and fullscreen_app()
                     apps_hit = bool(sh["hide_apps"]) and bool(running_exes() & set(sh["hide_apps"]))
+                    if self.settings["alarms"]:
+                        self._alarm_check(now, dt.datetime.now())
                 s = self.settings
                 if self.version != seen:
                     seen = self.version
@@ -1276,10 +1381,12 @@ class Clock:
                 if ov and now >= ov[0]:
                     self.override = ov = None
                 idle = idle_seconds()
+                alarm_view = self._alarm_tick(now, idle)
+                timer_view = self._timer_tick(now, idle)
                 wanted = s["enabled"] and not self.paused() and (
                     self.manual or sh["when"] == "always" or (sh["when"] == "idle" and idle >= sh["delay"]) or locked)
                 hidden = wanted and not locked and not self.manual and (full or apps_hit)
-                want = bool(ov) or (wanted and not hidden)
+                want = bool(ov) or bool(alarm_view) or bool(timer_view) or (wanted and not hidden)
                 if want and not holding and now >= next_try:
                     try:
                         backend = backend or open_backend(s)
@@ -1315,7 +1422,8 @@ class Clock:
                     if ov and ov[1]:
                         frame = ov[1](now - ov[2])
                     else:
-                        chime = s["look"]["chime"]
+                        extra = {"alarm": alarm_view} if alarm_view else {"timer": timer_view} if timer_view else None
+                        chime = s["look"]["chime"] if not extra else "off"
                         if chime != "off" and wall.second < 2 and (wall.minute == 0 or (chime == "half" and wall.minute == 30)):
                             stamp = (wall.hour, wall.minute)
                             if stamp != chimed and now - shown_at > 2:
@@ -1328,7 +1436,8 @@ class Clock:
                         night = night_now(s["night"], wall)
                         dark = not ov and ((night and s["night"]["action"] == "off") or (
                             sh["off_after"] > 0 and not self.manual and now - shown_at > sh["off_after"] * 60))
-                        frame = renderer.frame(now - shown_at, wall, chime_u, night, dark)
+                        music = self._music(s["look"]["background"]["mode"] == "music", now)
+                        frame = renderer.frame(now - shown_at, wall, chime_u, night, dark and not extra, extra, music)
                     self.last_frame = frame
                     try:
                         backend.send(frame)
@@ -1336,11 +1445,15 @@ class Clock:
                         log(f"Lost the keyboard: {e}")
                         holding = False
                         next_try = now + 5
+                if not holding:
+                    self._music(False, now)
                 if self.stop.wait(1 / FPS if holding else 0.2):
                     return
         finally:
             if holding:
                 backend.release()
+            if self._capture:
+                self._capture.close()
             if hotkey:
                 hotkey.stop()
 
@@ -1351,8 +1464,6 @@ class Clock:
 DEMO = [
     ("Hours then minutes, fade", 7, {"look": {"theme": "neon"}}),
     ("Time and date, slide", 13, {"display": {"mode": "time_date", "transition": "slide", "transition_secs": 0.6}}),
-    ("Scrolling text, rainbow", 14, {"display": {"mode": "scroll", "scroll_text": "{time} · {weekday} {date}"},
-                                      "look": {"theme": "rainbow"}}),
     ("Wipe, twinkling stars", 7, {"display": {"transition": "wipe", "transition_secs": 0.6}, "look": {"theme": "matrix"}}),
     ("Flowing gradient, breathing background", 7, {"look": {"theme": "ocean"}}),
     ("Sunset gradient, dissolve", 7, {"display": {"transition": "dissolve", "transition_secs": 0.7},
@@ -1476,11 +1587,8 @@ def preview_scenes(base, wall):
             scenes.append((name, s, 1.0, wall, 0.9))
             continue
         r = Renderer(Model("tkl-iso"), s, "en")
-        if s["display"]["mode"] == "scroll":
-            times = (3.5,)
-        else:
-            T = r.tsecs
-            times = (T + 1.0, r.items[0]["secs"] + T * 1.5)     # held, then mid-transition
+        T = r.tsecs
+        times = (T + 1.0, r.items[0]["secs"] + T * 1.5)     # held, then mid-transition
         for t in times:
             scenes.append((f"{name} t={t:g}", s, t, wall, None))
     return scenes
@@ -1708,7 +1816,210 @@ except (OSError, AttributeError):
     shcore = None
 
 
-# ---- texts (the four other languages: STRINGS_MORE, further down)
+# ---- sound: the Music background follows what the PC plays (WASAPI loopback of the default output),
+# analysed in memory and never recorded (from Glowback)
+def _iid(s):
+    import uuid
+    u = uuid.UUID(s)
+    g = GUID(u.time_low, u.time_mid, u.time_hi_version)
+    for i, b in enumerate(u.bytes[8:]):
+        g.d[i] = b
+    return g
+
+
+def _call(ptr, index, argtypes, *args, restype=ctypes.c_long):
+    """Call COM method #index of the interface `ptr`."""
+    vtbl = ctypes.cast(ptr, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents
+    return ctypes.WINFUNCTYPE(restype, VP, *argtypes)(vtbl[index])(ptr, *args)
+
+
+def _hr(hr, what):
+    if hr < 0:
+        raise OSError(f"{what} failed (0x{hr & 0xFFFFFFFF:08X})")
+    return hr
+
+
+def _release(ptr):
+    if ptr is not None and ptr.value:
+        _call(ptr, 2, [], restype=wt.ULONG)
+        ptr.value = None
+
+
+ole32 = ctypes.WinDLL("ole32")
+_sig(ole32.CoInitializeEx, ctypes.c_long, VP, wt.DWORD)
+_sig(ole32.CoCreateInstance, ctypes.c_long, ctypes.POINTER(GUID), VP, wt.DWORD, ctypes.POINTER(GUID), PVP)
+_sig(ole32.CoTaskMemFree, None, VP)
+CLSID_MMDeviceEnumerator = _iid("bcde0395-e52f-467c-8e3d-c4579291692e")
+IID_IMMDeviceEnumerator = _iid("a95664d2-9614-4f35-a746-de8db63617e6")
+IID_IAudioClient = _iid("1cb9ad4c-dbfa-4c32-b178-c2f568a703b2")
+IID_IAudioCaptureClient = _iid("c8adbd64-e71e-48a0-a4de-185c395cd317")
+
+
+def com_init():
+    """COM in this thread (the capture loop), for the sound APIs."""
+    ole32.CoInitializeEx(None, 0)  # multithreaded; already set up another way: fine too
+
+
+def _method(ptr, index, *argtypes):
+    """COM method #index of `ptr`, made once for calls many times a second."""
+    vtbl = ctypes.cast(ptr, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents
+    return ctypes.WINFUNCTYPE(ctypes.c_long, VP, *argtypes)(vtbl[index])
+
+
+def default_output():
+    """The default sound output (an IMMDevice, to release) and its ID."""
+    enum, dev, sid = VP(), VP(), VP()
+    _hr(ole32.CoCreateInstance(byref(CLSID_MMDeviceEnumerator), None, 23, byref(IID_IMMDeviceEnumerator),
+                               byref(enum)), "MMDeviceEnumerator")
+    try:
+        _hr(_call(enum, 4, [ctypes.c_int, ctypes.c_int, PVP], 0, 0, byref(dev)), "GetDefaultAudioEndpoint")
+    finally:
+        _release(enum)
+    ident = ""
+    if _call(dev, 5, [PVP], byref(sid)) >= 0 and sid.value:  # GetId
+        ident = ctypes.wstring_at(sid.value)
+        ole32.CoTaskMemFree(sid)
+    return dev, ident
+
+
+def _activate(dev, iid):
+    out = VP()
+    _hr(_call(dev, 3, [ctypes.POINTER(GUID), wt.DWORD, VP, PVP], byref(iid), 23, None, byref(out)), "Activate")
+    return out
+
+
+class SoundCapture:
+    """What the default output plays, as mono samples at about 24 kHz. Loopback: no microphone, nothing saved."""
+
+    def __init__(self):
+        self.client, self.capture, self.dev, self.ident = VP(), VP(), VP(), ""
+        try:
+            self.dev, self.ident = default_output()
+            self.client = _activate(self.dev, IID_IAudioClient)
+            fmt = VP()
+            _hr(_call(self.client, 8, [PVP], byref(fmt)), "GetMixFormat")
+            try:
+                tag, self.channels, rate, _, self.align, bits, extra = struct.unpack(
+                    "<HHIIHHH", ctypes.string_at(fmt.value, 18))
+                if tag == 0xFFFE and extra >= 22:  # WAVEFORMATEXTENSIBLE: its sub-format's first number
+                    tag = struct.unpack("<I", ctypes.string_at(fmt.value + 24, 4))[0]
+                self.code = {(3, 32): "f", (1, 16): "h", (1, 32): "i"}.get((tag, bits))
+                if not self.code or not self.channels:
+                    raise OSError(f"sound format {tag}/{bits} bits not supported")
+                _hr(_call(self.client, 3, [ctypes.c_int, wt.DWORD, ctypes.c_longlong, ctypes.c_longlong, VP, VP],
+                          0, 0x00020000, 5_000_000, 0, fmt, None), "Initialize")  # shared, LOOPBACK, 0.5 s
+            finally:
+                ole32.CoTaskMemFree(fmt)
+            _hr(_call(self.client, 14, [ctypes.POINTER(GUID), PVP], byref(IID_IAudioCaptureClient),
+                      byref(self.capture)), "GetService")
+            self.dec = max(1, round(rate / 24000))
+            self.rate = rate / self.dec
+            self.scale = {"f": 1.0, "h": 1 / 32768, "i": 1 / 2147483648}[self.code] / (self.dec * self.channels)
+            self._next = _method(self.capture, 5, ctypes.POINTER(wt.UINT))
+            self._get = _method(self.capture, 3, PVP, ctypes.POINTER(wt.UINT), ctypes.POINTER(wt.DWORD), VP, VP)
+            self._done = _method(self.capture, 4, wt.UINT)
+            _hr(_call(self.client, 10, []), "Start")
+        except Exception:
+            self.close()
+            raise
+
+    def read(self):
+        """The samples played since the last call: mono, -1..1."""
+        out, n, data, frames, flags = [], wt.UINT(), VP(), wt.UINT(), wt.DWORD()
+        step, k = self.dec * self.channels, self.scale
+        for _ in range(64):
+            _hr(self._next(self.capture, byref(n)), "GetNextPacketSize")
+            if not n.value:
+                break
+            _hr(self._get(self.capture, byref(data), byref(frames), byref(flags), None, None), "GetBuffer")
+            count = frames.value
+            try:
+                if flags.value & 0x2 or not data.value:  # AUDCLNT_BUFFERFLAGS_SILENT
+                    out.extend([0.0] * (count // self.dec))
+                elif count:
+                    a = array(self.code)
+                    a.frombytes(ctypes.string_at(data.value, count * self.align))
+                    out.extend(sum(a[i:i + step]) * k for i in range(0, len(a) - step + 1, step))
+            finally:
+                self._done(self.capture, count)
+        return out
+
+    def close(self):
+        if self.client.value:
+            try:
+                _call(self.client, 11, [])  # Stop
+            except OSError:
+                pass
+        for p in (self.capture, self.client, self.dev):
+            _release(p)
+
+
+def _fft(x, tw):
+    """Radix-2 FFT of a list whose length is a power of 2, with the twiddles tw[size]: plain Python."""
+    n = len(x)
+    if n == 2:
+        return [x[0] + x[1], x[0] - x[1]]
+    even, odd = _fft(x[0::2], tw), _fft(x[1::2], tw)
+    t = [w * o for w, o in zip(tw[n], odd)]
+    return [e + o for e, o in zip(even, t)] + [e - o for e, o in zip(even, t)]
+
+
+class MusicAnalyser:
+    """Loudness, beats and 14 frequency bands (0..1, bass first) of the sound, with an automatic gain."""
+    N = 512
+    EDGES = (40, 80, 120, 180, 260, 380, 550, 800, 1150, 1700, 2500, 3700, 5500, 8000, 12000)  # Hz
+
+    def __init__(self, rate):
+        n = self.N
+        self.window = [(0.5 - 0.5 * math.cos(2 * math.pi * i / (n - 1))) * 4.0 / n for i in range(n)]  # Hann
+        self.tw, size = {}, n
+        while size > 2:
+            self.tw[size] = [cmath.exp(-2j * math.pi * k / size) for k in range(size // 2)]
+            size //= 2
+        bins = [max(1, min(n // 2, round(f * n / rate))) for f in self.EDGES]
+        self.bands = [(a, max(a + 1, b)) for a, b in zip(bins, bins[1:])]
+        self.rate, self.buf = rate, [0.0] * n
+        self.level = [0.0] * len(self.bands)  # what the LEDs show, per band
+        self.peak = [1e-3] * len(self.bands)  # recent loudest, per band: the automatic gain
+        self.loud, self.loud_peak, self.pulse = 0.0, 1e-3, 0.0
+        self.bass_avg, self.last_beat, self.beats = 0.0, -1.0, 0
+        self.quiet, self.silent = 9.0, True
+        self.waves = []  # (start, strength) of the light waves sent by the beats
+
+    def update(self, samples, dt, sensitivity=50, now=None):
+        now = time.monotonic() if now is None else now
+        n = self.N
+        if not samples:  # loopback gets nothing while nothing plays: that is silence
+            samples = [0.0] * min(n, int(self.rate * dt))
+        self.buf = (self.buf + samples)[-n:]
+        spec = _fft([s * w for s, w in zip(self.buf, self.window)], self.tw)
+        power = [c.real * c.real + c.imag * c.imag for c in spec[:n // 2 + 1]]
+        amps = [math.sqrt(sum(power[a:b]) / (b - a)) for a, b in self.bands]
+        rms = math.sqrt(sum(s * s for s in self.buf) / n)
+        self.quiet = self.quiet + dt if rms < 3e-4 else 0.0
+        self.silent = self.quiet > 1.5
+        gain = 2.0 ** ((sensitivity - 50) / 25.0)
+        fall = math.exp(-dt / 6.0)  # the gain follows the music's level within a few seconds
+        attack, release = 1 - math.exp(-dt / 0.025), 1 - math.exp(-dt / 0.16)
+        self.peak = [max(a, p * fall, 1e-6) for a, p in zip(amps, self.peak)]
+        ref = max(self.peak)
+        for i, a in enumerate(amps):
+            v = min(1.0, (a / max(self.peak[i], ref * 0.15, 3e-3) * gain) ** 1.5)
+            self.level[i] += (v - self.level[i]) * (attack if v > self.level[i] else release)
+        self.loud_peak = max(rms, self.loud_peak * fall, 1e-6)
+        v = min(1.0, (rms / max(self.loud_peak, 3e-3) * gain) ** 1.5)
+        self.loud += (v - self.loud) * (attack if v > self.loud else release)
+        bass, bass_peak = sum(amps[:3]) / 3, max(self.peak[:3])  # beats: the bass jumps above its recent level
+        self.bass_avg += (bass - self.bass_avg) * (1 - math.exp(-dt / 0.45))
+        if bass > self.bass_avg * 1.4 and bass > bass_peak * 0.35 and bass > 3e-3 and now - self.last_beat > 0.22:
+            self.last_beat, self.pulse, self.beats = now, 1.0, self.beats + 1
+            self.waves = self.waves[-5:] + [(now, min(1.0, 0.55 + 0.45 * bass / bass_peak))]
+        else:
+            self.pulse *= math.exp(-dt / 0.18)
+        self.waves = [w for w in self.waves if now - w[0] < 1.2]
+
+
+# ---- texts
 STRINGS = {
     "en": {
         "status_showing": "On the keyboard now", "status_waiting": "Shows after {delay} without input",
@@ -1718,8 +2029,7 @@ STRINGS = {
         "status_no_keyboard": "Keyboard not found",
         "open_app": "Open Keyboard Clock", "clock": "Clock", "show_now": "Show it now",
         "pause_hour": "Pause for an hour", "resume": "Resume", "display": "Display", "brightness": "Brightness",
-        "mode_time": "Time", "mode_time_date": "Time and date", "mode_scroll": "Scrolling text", "mode_mixed": "Mixed",
-        "mode_custom": "Custom",
+        "mode_time": "Time", "mode_time_date": "Time and date", "mode_custom": "Custom",
         "start_windows": "Start with Windows", "about": "About", "updates": "Check for updates",
         "up_to_date": "Up to date", "check_failed": "Check failed", "auto_check": "Check automatically",
         "update_to": "Update to {version}", "update_title": "Keyboard Clock {version} is available",
@@ -1735,12 +2045,6 @@ STRINGS = {
         "live_preview": "Live preview", "show_keyboard": "Show on the keyboard",
         "screen_secs": "Each screen stays", "transition": "Transition", "tr_fade": "Fade", "tr_slide": "Slide",
         "tr_wipe": "Wipe", "tr_dissolve": "Dissolve", "tr_none": "None",
-        "scroll_text": "Scrolling text", "scroll_speed": "Speed", "scroll_smooth": "Smooth scrolling",
-        "scroll_smooth_desc": "Off: the text moves key by key, sharper on the keys",
-        "text_time": "Time", "text_time_date": "Time and date", "text_date": "Date", "text_seconds": "Time with seconds",
-        "text_custom": "Your own text…", "text_dialog": "Scrolling text",
-        "text_prompt": "Text to scroll on the keyboard:",
-        "text_hint": "Live values: {time} {hours} {minutes} {seconds} {weekday} {date} {day} {month} {year}",
         "ok": "OK", "cancel": "Cancel",
         "formats": "Formats", "hour12": "12-hour clock", "leading_zero": "Leading zero",
         "leading_zero_desc": "09:05 rather than 9:05", "seconds": "Seconds", "sec_block": "Key block",
@@ -1800,6 +2104,21 @@ STRINGS = {
         "about_license": "MIT License. Logitech and G HUB are trademarks of Logitech; Keyboard Clock is not "
                          "affiliated with Logitech.",
         "secs_fmt": "{n} s", "mins_fmt": "{n} min", "hours_fmt": "{n} h",
+        "nav_timer": "Timer & alarms",
+        "timer_sub": "A timer, Pomodoro cycles and alarms, right on your keys.",
+        "timer": "Timer", "timer_desc": "The keys count down the minutes, then flash",
+        "timer_left": "{time} left", "start": "Start", "stop": "Stop", "timer_start": "Timer, {n} min",
+        "pomodoro": "Pomodoro", "pomodoro_desc": "{work} min of work, {short} min of break, {long} min after {rounds} rounds",
+        "pomo_work": "Work", "pomo_short": "Break", "pomo_long": "Long break", "pomo_rounds": "Rounds before the long break",
+        "pomo_now_work": "Work, round {n}: {time} left", "pomo_now_break": "Break: {time} left",
+        "stop_timer": "Stop the timer", "status_timer": "Timer: {time} left", "status_alarm": "Alarm, {time}",
+        "alarms": "Alarms", "alarm_add": "Add an alarm",
+        "alarm_none": "No alarm yet. At the time you choose, the whole keyboard flashes until you touch a key.",
+        "alarm_every_day": "Every day", "days": "Mo Tu We Th Fr Sa Su", "alarm_time_dialog": "Alarm",
+        "alarm_time_prompt": "Time of the alarm (hours:minutes):", "alarm_time_hint": "For example 07:30 or 18:45.",
+        "bg_music": "Music", "music_pulse": "Pulse", "music_spectrum": "Equalizer",
+        "music_desc": "The other keys follow the sound your PC plays. It is analysed live, never recorded.",
+        "music_sens": "Sensitivity",
     },
     "fr": {
         "status_showing": "Affichée sur le clavier", "status_waiting": "S'affiche après {delay} d'inactivité",
@@ -1809,8 +2128,7 @@ STRINGS = {
         "status_no_keyboard": "Clavier introuvable",
         "open_app": "Ouvrir Keyboard Clock", "clock": "Horloge", "show_now": "L'afficher maintenant",
         "pause_hour": "Pause d'une heure", "resume": "Reprendre", "display": "Affichage", "brightness": "Luminosité",
-        "mode_time": "Heure", "mode_time_date": "Heure et date", "mode_scroll": "Texte qui défile",
-        "mode_mixed": "Mixte", "mode_custom": "Personnalisé",
+        "mode_time": "Heure", "mode_time_date": "Heure et date", "mode_custom": "Personnalisé",
         "start_windows": "Démarrer avec Windows", "about": "À propos", "updates": "Rechercher des mises à jour",
         "up_to_date": "À jour", "check_failed": "Échec de la vérification", "auto_check": "Vérifier automatiquement",
         "update_to": "Mettre à jour vers {version}", "update_title": "Keyboard Clock {version} est disponible",
@@ -1826,12 +2144,6 @@ STRINGS = {
         "live_preview": "Aperçu en direct", "show_keyboard": "Afficher sur le clavier",
         "screen_secs": "Durée de chaque écran", "transition": "Transition", "tr_fade": "Fondu", "tr_slide": "Glisser",
         "tr_wipe": "Balayage", "tr_dissolve": "Dissolution", "tr_none": "Aucune",
-        "scroll_text": "Texte qui défile", "scroll_speed": "Vitesse", "scroll_smooth": "Défilement fluide",
-        "scroll_smooth_desc": "Désactivé : le texte avance touche par touche, plus net sur le clavier",
-        "text_time": "Heure", "text_time_date": "Heure et date", "text_date": "Date",
-        "text_seconds": "Heure avec secondes", "text_custom": "Votre texte…", "text_dialog": "Texte qui défile",
-        "text_prompt": "Texte à faire défiler sur le clavier :",
-        "text_hint": "Valeurs en direct : {time} {hours} {minutes} {seconds} {weekday} {date} {day} {month} {year}",
         "ok": "OK", "cancel": "Annuler",
         "formats": "Formats", "hour12": "Format 12 heures", "leading_zero": "Zéro devant",
         "leading_zero_desc": "09:05 plutôt que 9:05", "seconds": "Secondes", "sec_block": "Bloc",
@@ -1895,6 +2207,23 @@ STRINGS = {
         "about_license": "Licence MIT. Logitech et G HUB sont des marques de Logitech ; Keyboard Clock n'est pas "
                          "affilié à Logitech.",
         "secs_fmt": "{n} s", "mins_fmt": "{n} min", "hours_fmt": "{n} h",
+        "nav_timer": "Minuteur et alarmes",
+        "timer_sub": "Un minuteur, des cycles Pomodoro et des alarmes, directement sur vos touches.",
+        "timer": "Minuteur", "timer_desc": "Les touches décomptent les minutes, puis clignotent",
+        "timer_left": "Reste {time}", "start": "Démarrer", "stop": "Arrêter", "timer_start": "Minuteur, {n} min",
+        "pomodoro": "Pomodoro",
+        "pomodoro_desc": "{work} min de travail, {short} min de pause, {long} min après {rounds} cycles",
+        "pomo_work": "Travail", "pomo_short": "Pause", "pomo_long": "Longue pause",
+        "pomo_rounds": "Cycles avant la longue pause",
+        "pomo_now_work": "Travail, cycle {n} : reste {time}", "pomo_now_break": "Pause : reste {time}",
+        "stop_timer": "Arrêter le minuteur", "status_timer": "Minuteur : reste {time}", "status_alarm": "Alarme, {time}",
+        "alarms": "Alarmes", "alarm_add": "Ajouter une alarme",
+        "alarm_none": "Aucune alarme. À l'heure choisie, tout le clavier clignote jusqu'à ce que vous touchiez une touche.",
+        "alarm_every_day": "Tous les jours", "days": "Lu Ma Me Je Ve Sa Di", "alarm_time_dialog": "Alarme",
+        "alarm_time_prompt": "Heure de l'alarme (heures:minutes) :", "alarm_time_hint": "Par exemple 07:30 ou 18:45.",
+        "bg_music": "Musique", "music_pulse": "Pulsation", "music_spectrum": "Égaliseur",
+        "music_desc": "Les autres touches suivent le son de votre PC. Il est analysé en direct, jamais enregistré.",
+        "music_sens": "Sensibilité",
     },
     "es": {
         "status_showing": "Ahora en el teclado", "status_waiting": "Aparece tras {delay} sin actividad",
@@ -1904,8 +2233,7 @@ STRINGS = {
         "status_no_keyboard": "Teclado no encontrado",
         "open_app": "Abrir Keyboard Clock", "clock": "Reloj", "show_now": "Mostrarlo ahora",
         "pause_hour": "Pausar una hora", "resume": "Reanudar", "display": "Visualización", "brightness": "Brillo",
-        "mode_time": "Hora", "mode_time_date": "Hora y fecha", "mode_scroll": "Texto desplazable", "mode_mixed": "Mixto",
-        "mode_custom": "Personalizado",
+        "mode_time": "Hora", "mode_time_date": "Hora y fecha", "mode_custom": "Personalizado",
         "start_windows": "Iniciar con Windows", "about": "Acerca de", "updates": "Buscar actualizaciones",
         "up_to_date": "Actualizado", "check_failed": "Error al buscar", "auto_check": "Buscar automáticamente",
         "update_to": "Actualizar a {version}", "update_title": "Keyboard Clock {version} está disponible",
@@ -1922,12 +2250,6 @@ STRINGS = {
         "live_preview": "Vista previa en vivo", "show_keyboard": "Mostrar en el teclado",
         "screen_secs": "Cada pantalla dura", "transition": "Transición", "tr_fade": "Fundido", "tr_slide": "Deslizar",
         "tr_wipe": "Barrido", "tr_dissolve": "Disolver", "tr_none": "Ninguna",
-        "scroll_text": "Texto desplazable", "scroll_speed": "Velocidad", "scroll_smooth": "Desplazamiento suave",
-        "scroll_smooth_desc": "Desactivado: el texto avanza tecla a tecla, más nítido en las teclas",
-        "text_time": "Hora", "text_time_date": "Hora y fecha", "text_date": "Fecha",
-        "text_seconds": "Hora con segundos", "text_custom": "Tu propio texto…", "text_dialog": "Texto desplazable",
-        "text_prompt": "Texto que se desplazará por el teclado:",
-        "text_hint": "Valores en vivo: {time} {hours} {minutes} {seconds} {weekday} {date} {day} {month} {year}",
         "ok": "Aceptar", "cancel": "Cancelar",
         "formats": "Formatos", "hour12": "Formato de 12 horas", "leading_zero": "Cero inicial",
         "leading_zero_desc": "09:05 en lugar de 9:05", "seconds": "Segundos", "sec_block": "Bloque",
@@ -1989,6 +2311,23 @@ STRINGS = {
         "about_license": "Licencia MIT. Logitech y G HUB son marcas comerciales de Logitech; Keyboard Clock no está "
                          "afiliado a Logitech.",
         "secs_fmt": "{n} s", "mins_fmt": "{n} min", "hours_fmt": "{n} h",
+        "nav_timer": "Temporizador y alarmas",
+        "timer_sub": "Un temporizador, ciclos Pomodoro y alarmas, directamente en tus teclas.",
+        "timer": "Temporizador", "timer_desc": "Las teclas cuentan los minutos y luego parpadean",
+        "timer_left": "Quedan {time}", "start": "Iniciar", "stop": "Detener", "timer_start": "Temporizador, {n} min",
+        "pomodoro": "Pomodoro",
+        "pomodoro_desc": "{work} min de trabajo, {short} min de descanso, {long} min tras {rounds} ciclos",
+        "pomo_work": "Trabajo", "pomo_short": "Descanso", "pomo_long": "Descanso largo",
+        "pomo_rounds": "Ciclos antes del descanso largo",
+        "pomo_now_work": "Trabajo, ciclo {n}: quedan {time}", "pomo_now_break": "Descanso: quedan {time}",
+        "stop_timer": "Detener el temporizador", "status_timer": "Temporizador: quedan {time}", "status_alarm": "Alarma, {time}",
+        "alarms": "Alarmas", "alarm_add": "Añadir una alarma",
+        "alarm_none": "Aún no hay alarmas. A la hora que elijas, todo el teclado parpadea hasta que toques una tecla.",
+        "alarm_every_day": "Todos los días", "days": "Lu Ma Mi Ju Vi Sá Do", "alarm_time_dialog": "Alarma",
+        "alarm_time_prompt": "Hora de la alarma (horas:minutos):", "alarm_time_hint": "Por ejemplo 07:30 o 18:45.",
+        "bg_music": "Música", "music_pulse": "Pulso", "music_spectrum": "Ecualizador",
+        "music_desc": "Las demás teclas siguen el sonido de tu PC. Se analiza en directo, nunca se graba.",
+        "music_sens": "Sensibilidad",
     },
     "de": {
         "status_showing": "Gerade auf der Tastatur", "status_waiting": "Erscheint nach {delay} ohne Eingabe",
@@ -1998,8 +2337,7 @@ STRINGS = {
         "status_no_keyboard": "Tastatur nicht gefunden",
         "open_app": "Keyboard Clock öffnen", "clock": "Uhr", "show_now": "Jetzt anzeigen",
         "pause_hour": "Eine Stunde pausieren", "resume": "Fortsetzen", "display": "Anzeige", "brightness": "Helligkeit",
-        "mode_time": "Uhrzeit", "mode_time_date": "Uhrzeit und Datum", "mode_scroll": "Lauftext",
-        "mode_mixed": "Gemischt", "mode_custom": "Individuell",
+        "mode_time": "Uhrzeit", "mode_time_date": "Uhrzeit und Datum", "mode_custom": "Individuell",
         "start_windows": "Mit Windows starten", "about": "Info", "updates": "Nach Updates suchen",
         "up_to_date": "Aktuell", "check_failed": "Suche fehlgeschlagen", "auto_check": "Automatisch suchen",
         "update_to": "Auf {version} aktualisieren", "update_title": "Keyboard Clock {version} ist verfügbar",
@@ -2018,12 +2356,6 @@ STRINGS = {
         "live_preview": "Live-Vorschau", "show_keyboard": "Auf der Tastatur zeigen",
         "screen_secs": "Jede Anzeige bleibt", "transition": "Übergang", "tr_fade": "Überblenden",
         "tr_slide": "Schieben", "tr_wipe": "Wischen", "tr_dissolve": "Auflösen", "tr_none": "Ohne",
-        "scroll_text": "Lauftext", "scroll_speed": "Tempo", "scroll_smooth": "Flüssiges Scrollen",
-        "scroll_smooth_desc": "Aus: Der Text springt Taste für Taste weiter, schärfer auf den Tasten",
-        "text_time": "Uhrzeit", "text_time_date": "Uhrzeit und Datum", "text_date": "Datum",
-        "text_seconds": "Uhrzeit mit Sekunden", "text_custom": "Eigener Text …", "text_dialog": "Lauftext",
-        "text_prompt": "Text, der über die Tastatur laufen soll:",
-        "text_hint": "Live-Werte: {time} {hours} {minutes} {seconds} {weekday} {date} {day} {month} {year}",
         "ok": "OK", "cancel": "Abbrechen",
         "formats": "Formate", "hour12": "12-Stunden-Format", "leading_zero": "Führende Null",
         "leading_zero_desc": "09:05 statt 9:05", "seconds": "Sekunden", "sec_block": "Tastenblock",
@@ -2086,6 +2418,23 @@ STRINGS = {
         "about_license": "MIT-Lizenz. Logitech und G HUB sind Marken von Logitech; Keyboard Clock steht in keiner "
                          "Verbindung zu Logitech.",
         "secs_fmt": "{n} Sek.", "mins_fmt": "{n} Min.", "hours_fmt": "{n} Std.",
+        "nav_timer": "Timer & Wecker",
+        "timer_sub": "Ein Timer, Pomodoro-Runden und Wecker, direkt auf deinen Tasten.",
+        "timer": "Timer", "timer_desc": "Die Tasten zählen die Minuten herunter und blinken dann",
+        "timer_left": "Noch {time}", "start": "Starten", "stop": "Stoppen", "timer_start": "Timer, {n} Min.",
+        "pomodoro": "Pomodoro",
+        "pomodoro_desc": "{work} Min. Arbeit, {short} Min. Pause, {long} Min. nach {rounds} Runden",
+        "pomo_work": "Arbeit", "pomo_short": "Pause", "pomo_long": "Lange Pause",
+        "pomo_rounds": "Runden vor der langen Pause",
+        "pomo_now_work": "Arbeit, Runde {n}: noch {time}", "pomo_now_break": "Pause: noch {time}",
+        "stop_timer": "Timer stoppen", "status_timer": "Timer: noch {time}", "status_alarm": "Wecker, {time}",
+        "alarms": "Wecker", "alarm_add": "Wecker hinzufügen",
+        "alarm_none": "Noch kein Wecker. Zur gewählten Zeit blinkt die ganze Tastatur, bis du eine Taste drückst.",
+        "alarm_every_day": "Jeden Tag", "days": "Mo Di Mi Do Fr Sa So", "alarm_time_dialog": "Wecker",
+        "alarm_time_prompt": "Uhrzeit des Weckers (Stunden:Minuten):", "alarm_time_hint": "Zum Beispiel 07:30 oder 18:45.",
+        "bg_music": "Musik", "music_pulse": "Puls", "music_spectrum": "Equalizer",
+        "music_desc": "Die anderen Tasten folgen dem Ton deines PCs. Er wird live analysiert, nie aufgenommen.",
+        "music_sens": "Empfindlichkeit",
     },
     "it": {
         "status_showing": "Ora sulla tastiera", "status_waiting": "Appare dopo {delay} di inattività",
@@ -2095,8 +2444,7 @@ STRINGS = {
         "status_no_keyboard": "Tastiera non trovata",
         "open_app": "Apri Keyboard Clock", "clock": "Orologio", "show_now": "Mostralo ora",
         "pause_hour": "Pausa di un'ora", "resume": "Riprendi", "display": "Visualizzazione", "brightness": "Luminosità",
-        "mode_time": "Ora", "mode_time_date": "Ora e data", "mode_scroll": "Testo scorrevole", "mode_mixed": "Misto",
-        "mode_custom": "Personalizzato",
+        "mode_time": "Ora", "mode_time_date": "Ora e data", "mode_custom": "Personalizzato",
         "start_windows": "Avvia con Windows", "about": "Informazioni", "updates": "Controlla aggiornamenti",
         "up_to_date": "Aggiornato", "check_failed": "Controllo non riuscito", "auto_check": "Controlla automaticamente",
         "update_to": "Aggiorna alla {version}", "update_title": "Keyboard Clock {version} è disponibile",
@@ -2114,12 +2462,6 @@ STRINGS = {
         "live_preview": "Anteprima live", "show_keyboard": "Mostra sulla tastiera",
         "screen_secs": "Ogni schermata dura", "transition": "Transizione", "tr_fade": "Dissolvenza",
         "tr_slide": "Scorrimento", "tr_wipe": "Tendina", "tr_dissolve": "Dissolvi", "tr_none": "Nessuna",
-        "scroll_text": "Testo scorrevole", "scroll_speed": "Velocità", "scroll_smooth": "Scorrimento fluido",
-        "scroll_smooth_desc": "Disattivato: il testo avanza tasto per tasto, più nitido sui tasti",
-        "text_time": "Ora", "text_time_date": "Ora e data", "text_date": "Data", "text_seconds": "Ora con i secondi",
-        "text_custom": "Il tuo testo…", "text_dialog": "Testo scorrevole",
-        "text_prompt": "Testo da far scorrere sulla tastiera:",
-        "text_hint": "Valori in tempo reale: {time} {hours} {minutes} {seconds} {weekday} {date} {day} {month} {year}",
         "ok": "OK", "cancel": "Annulla",
         "formats": "Formati", "hour12": "Formato 12 ore", "leading_zero": "Zero iniziale",
         "leading_zero_desc": "09:05 invece di 9:05", "seconds": "Secondi", "sec_block": "Blocco",
@@ -2181,6 +2523,23 @@ STRINGS = {
         "about_license": "Licenza MIT. Logitech e G HUB sono marchi di Logitech; Keyboard Clock non è affiliato a "
                          "Logitech.",
         "secs_fmt": "{n} s", "mins_fmt": "{n} min", "hours_fmt": "{n} h",
+        "nav_timer": "Timer e sveglie",
+        "timer_sub": "Un timer, cicli Pomodoro e sveglie, direttamente sui tuoi tasti.",
+        "timer": "Timer", "timer_desc": "I tasti contano i minuti alla rovescia, poi lampeggiano",
+        "timer_left": "Mancano {time}", "start": "Avvia", "stop": "Ferma", "timer_start": "Timer, {n} min",
+        "pomodoro": "Pomodoro",
+        "pomodoro_desc": "{work} min di lavoro, {short} min di pausa, {long} min dopo {rounds} cicli",
+        "pomo_work": "Lavoro", "pomo_short": "Pausa", "pomo_long": "Pausa lunga",
+        "pomo_rounds": "Cicli prima della pausa lunga",
+        "pomo_now_work": "Lavoro, ciclo {n}: mancano {time}", "pomo_now_break": "Pausa: mancano {time}",
+        "stop_timer": "Ferma il timer", "status_timer": "Timer: mancano {time}", "status_alarm": "Sveglia, {time}",
+        "alarms": "Sveglie", "alarm_add": "Aggiungi una sveglia",
+        "alarm_none": "Nessuna sveglia. All'ora scelta, tutta la tastiera lampeggia finché non premi un tasto.",
+        "alarm_every_day": "Ogni giorno", "days": "Lu Ma Me Gi Ve Sa Do", "alarm_time_dialog": "Sveglia",
+        "alarm_time_prompt": "Ora della sveglia (ore:minuti):", "alarm_time_hint": "Per esempio 07:30 o 18:45.",
+        "bg_music": "Musica", "music_pulse": "Pulsazione", "music_spectrum": "Equalizzatore",
+        "music_desc": "Gli altri tasti seguono il suono del tuo PC. Viene analizzato dal vivo, mai registrato.",
+        "music_sens": "Sensibilità",
     },
     "pt": {
         "status_showing": "No teclado agora", "status_waiting": "Aparece após {delay} sem atividade",
@@ -2190,8 +2549,7 @@ STRINGS = {
         "status_no_keyboard": "Teclado não encontrado",
         "open_app": "Abrir o Keyboard Clock", "clock": "Relógio", "show_now": "Mostrar agora",
         "pause_hour": "Pausar por uma hora", "resume": "Retomar", "display": "Exibição", "brightness": "Brilho",
-        "mode_time": "Hora", "mode_time_date": "Hora e data", "mode_scroll": "Texto rolante", "mode_mixed": "Misto",
-        "mode_custom": "Personalizado",
+        "mode_time": "Hora", "mode_time_date": "Hora e data", "mode_custom": "Personalizado",
         "start_windows": "Iniciar com o Windows", "about": "Sobre", "updates": "Verificar atualizações",
         "up_to_date": "Atualizado", "check_failed": "Falha na verificação", "auto_check": "Verificar automaticamente",
         "update_to": "Atualizar para {version}", "update_title": "Keyboard Clock {version} está disponível",
@@ -2208,12 +2566,6 @@ STRINGS = {
         "live_preview": "Prévia ao vivo", "show_keyboard": "Mostrar no teclado",
         "screen_secs": "Cada tela dura", "transition": "Transição", "tr_fade": "Esmaecer", "tr_slide": "Deslizar",
         "tr_wipe": "Varredura", "tr_dissolve": "Dissolver", "tr_none": "Nenhuma",
-        "scroll_text": "Texto rolante", "scroll_speed": "Velocidade", "scroll_smooth": "Rolagem suave",
-        "scroll_smooth_desc": "Desligado: o texto anda tecla por tecla, mais nítido nas teclas",
-        "text_time": "Hora", "text_time_date": "Hora e data", "text_date": "Data", "text_seconds": "Hora com segundos",
-        "text_custom": "Seu próprio texto…", "text_dialog": "Texto rolante",
-        "text_prompt": "Texto para rolar no teclado:",
-        "text_hint": "Valores ao vivo: {time} {hours} {minutes} {seconds} {weekday} {date} {day} {month} {year}",
         "ok": "OK", "cancel": "Cancelar",
         "formats": "Formatos", "hour12": "Formato de 12 horas", "leading_zero": "Zero à esquerda",
         "leading_zero_desc": "09:05 em vez de 9:05", "seconds": "Segundos", "sec_block": "Bloco",
@@ -2274,6 +2626,23 @@ STRINGS = {
         "about_license": "Licença MIT. Logitech e G HUB são marcas da Logitech; o Keyboard Clock não é afiliado à "
                          "Logitech.",
         "secs_fmt": "{n} s", "mins_fmt": "{n} min", "hours_fmt": "{n} h",
+        "nav_timer": "Timer e alarmes",
+        "timer_sub": "Um timer, ciclos Pomodoro e alarmes, direto nas suas teclas.",
+        "timer": "Timer", "timer_desc": "As teclas contam os minutos e depois piscam",
+        "timer_left": "Faltam {time}", "start": "Iniciar", "stop": "Parar", "timer_start": "Timer, {n} min",
+        "pomodoro": "Pomodoro",
+        "pomodoro_desc": "{work} min de trabalho, {short} min de pausa, {long} min após {rounds} ciclos",
+        "pomo_work": "Trabalho", "pomo_short": "Pausa", "pomo_long": "Pausa longa",
+        "pomo_rounds": "Ciclos antes da pausa longa",
+        "pomo_now_work": "Trabalho, ciclo {n}: faltam {time}", "pomo_now_break": "Pausa: faltam {time}",
+        "stop_timer": "Parar o timer", "status_timer": "Timer: faltam {time}", "status_alarm": "Alarme, {time}",
+        "alarms": "Alarmes", "alarm_add": "Adicionar um alarme",
+        "alarm_none": "Nenhum alarme ainda. Na hora escolhida, o teclado inteiro pisca até você tocar uma tecla.",
+        "alarm_every_day": "Todos os dias", "days": "Se Te Qa Qi Sx Sá Do", "alarm_time_dialog": "Alarme",
+        "alarm_time_prompt": "Hora do alarme (horas:minutos):", "alarm_time_hint": "Por exemplo 07:30 ou 18:45.",
+        "bg_music": "Música", "music_pulse": "Pulso", "music_spectrum": "Equalizador",
+        "music_desc": "As outras teclas seguem o som do seu PC. Ele é analisado ao vivo, nunca gravado.",
+        "music_sens": "Sensibilidade",
     },
 }
 _lang = {"code": "en"}
@@ -2502,6 +2871,11 @@ def color_hsv(c):
 def hsv_color(h, s, v=1.0):
     r, g, b = colorsys.hsv_to_rgb((h % 360) / 360, s, v)
     return (round(r * 255) << 16) | (round(g * 255) << 8) | round(b * 255)
+
+
+def mmss(secs):
+    secs = int(math.ceil(secs))
+    return f"{secs // 3600}:{secs // 60 % 60:02d}:{secs % 60:02d}" if secs >= 3600 else f"{secs // 60}:{secs % 60:02d}"
 
 
 SWATCHES = (0xFF1A1A, 0xFF5900, 0xFFB000, 0xFFE600, 0x00FF41, 0x00CCFF, 0x0050FF, 0x8B2BFF, 0xFF2E9A, 0xFFFFFF)
@@ -2830,7 +3204,7 @@ class Store:
 class Tray:
     """The icon next to the clock and its panel."""
     WM_TRAY, WM_CLOSE_APP, WM_UPDATE, WM_CHECKED, WM_OPEN_APP, WM_SYNC = 0x8001, 0x8002, 0x8003, 0x8004, 0x8007, 0x8008
-    MODES = ("time", "time_date", "scroll", "mixed")
+    MODES = ("time", "time_date")
 
     def __init__(self, clock, stop, argv):
         self.clock, self.stop, self.argv = clock, stop, argv
@@ -2867,6 +3241,14 @@ class Tray:
         """(text, dot) for the panel's header and the window's sidebar: dot on, off or none (amber)."""
         c, s = self.clock, self.clock.settings
         st = c.status
+        if c.alarm:
+            return tr("status_alarm", time=c.alarm["time"]), "none"
+        if c.timer:
+            left = mmss(c.timer_left())
+            if c.timer["kind"] == "pomodoro":
+                key = "pomo_now_work" if c.timer["phase"] == "work" else "pomo_now_break"
+                return tr(key, n=c.timer["round"], time=left), "on"
+            return tr("status_timer", time=left), "on"
         if st == "showing":
             return tr("status_showing"), "on"
         if st == "off":
@@ -3085,7 +3467,14 @@ class Tray:
                        glyphs=[icons[AppWindow.MODE_ICONS[m]] for m in self.MODES]),
                   dict(kind="segments", id=10, icon="sun", text=tr("brightness"), values=(25, 50, 75, 100),
                        value=round(s["look"]["brightness"])),
-                  dict(kind="sep"),
+                  dict(kind="sep"), dict(kind="label", text=tr("timer"))]
+        if c.timer:
+            items.append(dict(kind="action", id=40, icon="timer", text=tr("stop_timer"),
+                              status=(mmss(c.timer_left()), MenuPainter.ACCENT, None), statuses=("00:00:00",)))
+        else:
+            items += [dict(kind="action", id=41, icon="timer", text=tr("timer_start", n=s["timer"]["minutes"])),
+                      dict(kind="action", id=42, icon="sync", text=tr("pomodoro"))]
+        items += [dict(kind="sep"),
                   dict(kind="toggle", id=20, icon="power", text=tr("start_windows"), on=self.autostart),
                   dict(kind="sep"), dict(kind="label", text=tr("about")),
                   dict(kind="action", id=26, icon="sync", text=tr("updates"), busy=self.checking,
@@ -3156,6 +3545,8 @@ class Tray:
         user32.SetForegroundWindow(self.flyout)
         if self.checking:
             user32.SetTimer(self.flyout, 1, 33, None)
+        if self.clock.timer:
+            user32.SetTimer(self.flyout, 2, 1000, None)
 
     def _hit(self, x, y):
         rows, _, _ = self._layout()
@@ -3226,6 +3617,14 @@ class Tray:
                 st.set(("look", "brightness"), items[i]["values"][seg])
         elif cid == 26:
             self.check_now()
+        elif cid == 40:
+            c.stop_timer()
+        elif cid == 41:
+            c.start_timer()
+            user32.SetTimer(self.flyout, 2, 1000, None)
+        elif cid == 42:
+            c.start_pomodoro()
+            user32.SetTimer(self.flyout, 2, 1000, None)
         else:
             user32.PostMessageW(self.flyout, 0x0010, 0, 0)
             if cid == 2:
@@ -3252,7 +3651,9 @@ class Tray:
         if msg == 0x0014:
             return 1
         if msg == 0x0113:
-            if self.checking:
+            if wparam == 2:                                        # the timer's time left
+                user32.InvalidateRect(hwnd, None, False)
+            elif self.checking:
                 user32.InvalidateRect(hwnd, None, False)
             else:
                 user32.KillTimer(hwnd, 1)
@@ -3699,13 +4100,13 @@ def theme_stops(name):
 class AppWindow:
     """The window: a sidebar of pages, drawn from display lists rebuilt on every paint (Glowback's toolkit).
     Pages: Clock (live keyboard, what it shows), Look, When, Font (digit editor), Keyboard, Settings, About."""
-    PAGES = (("clock", "clock", "nav_clock"), ("look", "palette", "nav_look"), ("when", "timer", "nav_when"),
-             ("font", "font", "nav_font"), ("keyboard", "keyboard", "nav_keyboard"),
+    PAGES = (("clock", "clock", "nav_clock"), ("look", "palette", "nav_look"), ("when", "power", "nav_when"),
+             ("timer", "timer", "nav_timer"), ("font", "font", "nav_font"), ("keyboard", "keyboard", "nav_keyboard"),
              ("settings", "settings", "nav_settings"), ("about", "info", "nav_about"))
     LIVE_PAGES = ("clock", "look")                  # the live keyboard moves (timer)
     PINNED = ("clock", "look", "font")               # the keyboard stays in view while the options scroll
-    MODE_ICONS = {"time": "clock", "time_date": "calendar", "scroll": "arrow", "mixed": "layers", "custom": "edit"}
-    SLIDERS = ("secs", "speed", "hue", "sat", "bghue", "bgsat", "bg_level", "brightness", "night_bright")
+    MODE_ICONS = {"time": "clock", "time_date": "calendar", "custom": "edit"}
+    SLIDERS = ("secs", "sens", "hue", "sat", "bghue", "bgsat", "bg_level", "brightness", "night_bright")
     BG, CARD, LINE, HOVER, SELECT = 0x121317, 0x1A1B21, 0x24262E, 0x212329, 0x1F2129
     FIELD, FIELD_LINE = 0x0F1013, 0x2E3140
     SIZE, MIN = (1060, 820), (860, 580)
@@ -3713,9 +4114,10 @@ class AppWindow:
                   ("it", "Italiano"), ("pt", "Português (Brasil)"))
     DELAYS = (10, 20, 30, 45, 60, 90, 120, 180, 300, 600, 900, 1800)
     OFF_AFTER = (0, 5, 10, 15, 30, 45, 60, 120)
+    TIMER_MINUTES = (1, 2, 3, 5, 10, 15, 20, 25, 30, 45, 60, 90, 120, 180)
+    POMO_STEPS = {"work": (5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 75, 90, 120), "short": (1, 2, 3, 4, 5, 10, 15),
+                  "long": (5, 10, 15, 20, 25, 30, 45, 60), "rounds": (1, 2, 3, 4, 5, 6, 7, 8)}
     HOTKEYS = ("Ctrl+Alt+H", "Ctrl+Alt+K", "Ctrl+Alt+C", "Ctrl+Shift+F12", "Win+Alt+K", "")
-    TEXTS = (("{time}", "text_time"), ("{time} · {weekday} {date}", "text_time_date"), ("{weekday} {date}", "text_date"),
-             ("{time}:{seconds}", "text_seconds"))
 
     def __init__(self, tray):
         self.tray, self.clock, self.store = tray, tray.clock, tray.store
@@ -4151,7 +4553,8 @@ class AppWindow:
 
     def live_frame(self):
         s, wall = self.store.s, dt.datetime.now()
-        return self.renderer().frame(time.monotonic() - self.t0, wall, None, night_now(s["night"], wall))
+        music = self.clock._analyser if s["look"]["background"]["mode"] == "music" else None
+        return self.renderer().frame(time.monotonic() - self.t0, wall, None, night_now(s["night"], wall), music=music)
 
     def font_frame(self, model=None, digit=None, side=None):
         """The digit being edited: left in the hours color, right in the minutes color. With `side`, the other
@@ -4318,32 +4721,18 @@ class AppWindow:
             self._mode_tile("mode:" + m, x0 + i * (w + gap), y, w, th, self.MODE_ICONS[m], tr("mode_" + m), d["mode"] == m)
         y += th + p(12)
         pad, at, top = p(20), len(self.content[0]), y
-        labels = ("screen_secs", "transition", "scroll_text", "scroll_speed")
+        labels = ("screen_secs", "transition")
         cx = x0 + pad + max(self.tw(tr(k), self.fonts["body"]) for k in labels) + p(24)
         y += p(12)
         rh = p(52)
-        if d["mode"] != "scroll":
-            self._field_label(tr("screen_secs"), y, rh, cx)
-            self._slider("secs", cx + p(12), x1 - p(120), y + rh / 2, (d["secs"] - 1) / 9 * 100)
-            self._value(f"{d['secs']:g} s", y, rh)
-            y += rh
-            self._field_label(tr("transition"), y, rh, cx)
-            self._segmented("tr", cx, x1 - pad, y + (rh - p(40)) / 2,
-                            [(t, None, tr("tr_" + t)) for t in TRANSITIONS], d["transition"])
-            y += rh
-        if d["mode"] in ("scroll", "mixed"):
-            if d["mode"] == "scroll":
-                self._field_label(tr("scroll_text"), y, rh, cx)
-                name = next((tr(k) for t, k in self.TEXTS if t == d["scroll_text"]), d["scroll_text"])
-                self._picker("pick:text", cx, y + (rh - p(36)) / 2, min(p(420), x1 - pad - cx), name, glyph="edit")
-                y += rh
-            self._field_label(tr("scroll_speed"), y, rh, cx)
-            self._slider("speed", cx + p(12), x1 - p(120), y + rh / 2, (d["scroll_speed"] - 1) / 14 * 100)
-            self._value(f"{d['scroll_speed']:g}", y, rh)
-            y += rh + p(4)
-            self._sep(y)
-            y = self._toggle_row("smooth", y, "flow", tr("scroll_smooth"), tr("scroll_smooth_desc"), d["scroll_smooth"])
-        y += p(8)
+        self._field_label(tr("screen_secs"), y, rh, cx)
+        self._slider("secs", cx + p(12), x1 - p(120), y + rh / 2, (d["secs"] - 1) / 9 * 100)
+        self._value(f"{d['secs']:g} s", y, rh)
+        y += rh
+        self._field_label(tr("transition"), y, rh, cx)
+        self._segmented("tr", cx, x1 - pad, y + (rh - p(40)) / 2,
+                        [(t, None, tr("tr_" + t)) for t in TRANSITIONS], d["transition"])
+        y += rh + p(8)
         self._card_behind(at, top, y - top)
         y += p(24)
         y = self._label(y, tr("formats"))
@@ -4455,10 +4844,22 @@ class AppWindow:
         bg = lo["background"]
         at, top = len(self.content[0]), y
         y += pad
-        self._segmented("bg", x0 + pad, x1 - pad, y, [(b, None, tr("bg_" + b)) for b in BACKGROUNDS if b != "music"],
-                        bg["mode"])
+        self._segmented("bg", x0 + pad, x1 - pad, y, [(b, None, tr("bg_" + b)) for b in BACKGROUNDS], bg["mode"])
         y += p(40) + p(20)
-        if bg["mode"] in ("dim", "breathe", "twinkle"):
+        if bg["mode"] == "music":
+            self._segmented("mstyle", x0 + pad, x0 + pad + min(p(360), x1 - x0 - 2 * pad), y,
+                            [(m_, None, tr("music_" + m_)) for m_ in MUSIC_STYLES], bg["music_style"])
+            y += p(40) + p(14)
+            text = tr("music_desc")
+            th_ = self.wrap_h(text, self.painter.f_small, x1 - x0 - 2 * pad)
+            self.W(text, self.painter.f_small, MenuPainter.MUTED, x0 + pad, y, x1 - pad, y + th_)
+            y += th_ + p(18)
+            lw = self.tw(tr("music_sens"), self.fonts["body"]) + p(24)
+            self.T(tr("music_sens"), self.fonts["body"], MenuPainter.ICON, x0 + pad, y, x0 + pad + lw, y + p(28), 0x8000)
+            self._slider("sens", x0 + pad + lw + p(12), x1 - p(120), y + p(14), bg["sensitivity"])
+            self._value(f"{round(bg['sensitivity'])} %", y, p(28))
+            y += p(28) + p(18)
+        if bg["mode"] in ("dim", "breathe", "twinkle") or (bg["mode"] == "music" and bg["music_style"] == "pulse"):
             y = self._color_rows(y, cint(bg["color"]), pad, prefix="bg") + p(20)
         elif bg["mode"] == "gradient":
             text = tr("bg_gradient_desc")
@@ -4546,6 +4947,80 @@ class AppWindow:
                 self._value(f"{round(ni['brightness'])} %", y, p(52))
                 y += p(52)
             y += p(8)
+        self._card_behind(at, top, y - top)
+        return y
+
+    def _chip(self, wid, x, y, w, h, text, on):
+        hov = self.hover == wid
+        self.S("round", MenuPainter.ACCENT if on else (self.HOVER if hov else self.FIELD), x, y, w, h, h / 2)
+        if not on:
+            self.S("outline", self.FIELD_LINE, x, y, w, h, h / 2, max(1.0, self.k))
+        self.T(text, self.fonts["button"], 0xFFFFFF if on else MenuPainter.ICON, x, y, x + w, y + h, 0x1)
+        self.add(wid, "tile", (x, y, x + w, y + h), radius=h / 2)
+
+    def _page_timer(self, y):
+        p, s, c, x0, x1 = self.px, self.store.s, self.clock, self.cx0, self.cx1
+        ti, tm = s["timer"], c.timer
+        pad, rh, sr = p(20), p(68), p(52)
+        y = self._header(y, tr("nav_timer"), tr("timer_sub"))
+        self._card(y, rh)
+        if tm and tm["kind"] == "timer":
+            bx = self._button("timer:stop", x1 - pad, y + (rh - p(34)) / 2, tr("stop"), "secondary", icon="close")
+            self._row_text(y, rh, "timer", tr("timer"), tr("timer_left", time=mmss(c.timer_left())), right=bx - p(16),
+                           desc_color=MenuPainter.ACCENT, icon_color=MenuPainter.ACCENT)
+        else:
+            bx = self._button("timer:start", x1 - pad, y + (rh - p(34)) / 2, tr("start"), "primary", icon="timer")
+            bx = self._stepper("tmin", bx - p(12), y + (rh - p(36)) / 2, tr("mins_fmt", n=ti["minutes"]))
+            self._row_text(y, rh, "timer", tr("timer"), tr("timer_desc"), right=bx - p(16))
+        y += rh + p(12)
+        pomo = tm and tm["kind"] == "pomodoro"
+        self._card(y, rh + 4 * sr + p(10))
+        if pomo:
+            bx = self._button("pomo:stop", x1 - pad, y + (rh - p(34)) / 2, tr("stop"), "secondary", icon="close")
+            key = "pomo_now_work" if tm["phase"] == "work" else "pomo_now_break"
+            self._row_text(y, rh, "sync", tr("pomodoro"), tr(key, n=tm["round"], time=mmss(c.timer_left())),
+                           right=bx - p(16), desc_color=MenuPainter.ACCENT, icon_color=MenuPainter.ACCENT)
+        else:
+            bx = self._button("pomo:start", x1 - pad, y + (rh - p(34)) / 2, tr("start"), "primary", icon="sync")
+            self._row_text(y, rh, "sync", tr("pomodoro"), tr("pomodoro_desc", **{k: ti[k] for k in self.POMO_STEPS}),
+                           right=bx - p(16))
+        y += rh
+        self._sep(y)
+        y += p(5)
+        for key in ("work", "short", "long", "rounds"):
+            text = str(ti[key]) if key == "rounds" else tr("mins_fmt", n=ti[key])
+            self._field_label(tr("pomo_" + key), y, sr, x1 - p(200))
+            self._stepper("p" + key, x1 - pad, y + (sr - p(36)) / 2, text)
+            y += sr
+        y += p(5) + p(28)
+        y = self._label(y, tr("alarms"))
+        alarms = s["alarms"]
+        days = tr("days").split()
+        at, top = len(self.content[0]), y
+        y += p(8)
+        if not alarms:
+            th_ = self.wrap_h(tr("alarm_none"), self.fonts["body"], x1 - x0 - 2 * pad)
+            self.W(tr("alarm_none"), self.fonts["body"], MenuPainter.MUTED, x0 + pad, y + p(10), x1 - pad, y + p(10) + th_)
+            y += th_ + p(20)
+        for i, a in enumerate(alarms):
+            if i:
+                self._sep(y)
+            ry = y + p(10)
+            self._picker(f"atime{i}", x0 + pad, ry, p(112), a["time"], glyph="clock")
+            cw, ch, gap = p(38), p(30), p(6)
+            dx = x0 + pad + p(112) + p(16)
+            for d in range(7):
+                self._chip(f"aday{i}:{d}", dx + d * (cw + gap), ry + p(3), cw, ch, days[d], d in a["days"])
+            self._icon_button(f"adel{i}", x1 - pad - p(36), ry, p(36), "delete")
+            self._toggle(f"aon{i}", x1 - pad - p(36) - p(16) - p(42), ry + p(7), a["on"])
+            y = ry + p(36) + p(6)
+            if not a["days"]:
+                self.T(tr("alarm_every_day"), self.painter.f_small, MenuPainter.MUTED, dx, y - p(2), x1, y + p(14))
+            y += p(16)
+        self._sep(y)
+        y += p(12)
+        self._button("alarm:add", x1 - pad, y, tr("alarm_add"), "secondary", icon="add")
+        y += p(34) + p(14)
         self._card_behind(at, top, y - top)
         return y
 
@@ -4779,8 +5254,8 @@ class AppWindow:
             st.set(("display", "transition"), wid[3:])
         elif wid.startswith("sec:"):
             st.set(("display", "seconds"), wid[4:])
-        elif wid in ("hour12", "zero", "smooth"):
-            key = {"hour12": "hour12", "zero": "leading_zero", "smooth": "scroll_smooth"}[wid]
+        elif wid in ("hour12", "zero"):
+            key = {"hour12": "hour12", "zero": "leading_zero"}[wid]
             st.set(("display", key), not s["display"][key])
         elif wid.startswith("theme:"):
             st.replace(apply_theme(s, wid[6:]))
@@ -4807,6 +5282,43 @@ class AppWindow:
             elif wid[5:].isdigit():
                 self.stop_sel = int(wid[5:])
             st.set(("look", "gradient"), ["#%06x" % v for v in stops])
+        elif wid == "timer:start":
+            c.start_timer()
+        elif wid in ("timer:stop", "pomo:stop"):
+            c.stop_timer()
+        elif wid == "pomo:start":
+            c.start_pomodoro()
+        elif re.fullmatch(r"(tmin|pwork|pshort|plong|prounds):[+-]", wid):
+            name, step = wid.split(":")
+            key, steps = ("minutes", self.TIMER_MINUTES) if name == "tmin" else (name[1:], self.POMO_STEPS[name[1:]])
+            cur = s["timer"][key]
+            i = min(range(len(steps)), key=lambda k_: abs(steps[k_] - cur))
+            st.set(("timer", key), steps[max(0, min(len(steps) - 1, i + (1 if step == "+" else -1)))])
+        elif wid == "alarm:add":
+            hour = (dt.datetime.now().hour + 1) % 24
+            st.set(("alarms",), s["alarms"] + [{"on": True, "time": f"{hour:02d}:00", "days": [], "color": ALARM_COLOR}])
+        elif re.fullmatch(r"(aon|adel|atime|aday)\d+(:\d)?", wid):
+            m_ = re.fullmatch(r"(aon|adel|atime|aday)(\d+)(?::(\d))?", wid)
+            kind, i = m_.group(1), int(m_.group(2))
+            alarms = [dict(a) for a in s["alarms"]]
+            if i < len(alarms):
+                if kind == "aon":
+                    alarms[i]["on"] = not alarms[i]["on"]
+                elif kind == "adel":
+                    del alarms[i]
+                    self.focus = None
+                elif kind == "aday":
+                    d = int(m_.group(3))
+                    alarms[i]["days"] = sorted(set(alarms[i]["days"]) ^ {d})
+                else:
+                    value = InputDialog(self.hwnd, self.k).ask(tr("alarm_time_dialog"), tr("alarm_time_prompt"),
+                                                               tr("alarm_time_hint"), alarms[i]["time"])
+                    if not value:
+                        return
+                    alarms[i]["time"] = value.strip()
+                st.set(("alarms",), alarms)
+        elif wid.startswith("mstyle:"):
+            st.set(("look", "background", "music_style"), wid[7:])
         elif wid.startswith("bg:"):
             st.set(("look", "background", "mode"), wid[3:])
         elif wid.startswith("chime:"):
@@ -4937,16 +5449,10 @@ class AppWindow:
             if step:
                 v = max(1.0, min(10.0, cur + step * 0.5))
             st.set(("display", "secs"), v, save)
-        elif wid == "speed":
-            cur = s["display"]["scroll_speed"]
-            v = cur if f is None else round(1 + f * 14)
-            if step:
-                v = max(1, min(15, round(cur) + step))
-            st.set(("display", "scroll_speed"), v, save)
-        elif wid in ("brightness", "bg_level", "night_bright"):
+        elif wid in ("brightness", "bg_level", "night_bright", "sens"):
             path = {"brightness": ("look", "brightness"), "bg_level": ("look", "background", "level"),
-                    "night_bright": ("night", "brightness")}[wid]
-            lo = 0 if wid == "bg_level" else 5
+                    "night_bright": ("night", "brightness"), "sens": ("look", "background", "sensitivity")}[wid]
+            lo = 0 if wid in ("bg_level", "sens") else 5
             cur = st.get(path)
             v = cur if f is None else max(lo, round(f * 20) * 5)
             if step:
@@ -4979,13 +5485,7 @@ class AppWindow:
         def radio(text, value, checked, **kw):
             items.append(dict(kind="radio", text=text, value=value, checked=checked, **kw))
 
-        if which == "text":
-            for text, key in self.TEXTS:
-                radio(tr(key), text, s["display"]["scroll_text"] == text)
-            items.append(dict(kind="sep"))
-            custom = all(s["display"]["scroll_text"] != t for t, _ in self.TEXTS)
-            radio(tr("text_custom"), "custom", custom, icon="edit")
-        elif which == "style":
+        if which == "style":
             lo = s["look"]
             for style in STYLES:
                 kw = {"solid": dict(swatch=cint(lo["colors"]["hours"])),
@@ -5009,14 +5509,7 @@ class AppWindow:
         if chosen is None or chosen.get("value") is None:
             return
         value = chosen["value"]
-        if which == "text":
-            if value == "custom":
-                value = InputDialog(self.hwnd, self.k).ask(tr("text_dialog"), tr("text_prompt"), tr("text_hint"),
-                                                           s["display"]["scroll_text"])
-                if not value or not value.strip():
-                    return
-            st.set(("display", "scroll_text"), value)
-        elif which == "style":
+        if which == "style":
             st.set(("look", "style"), value)
         elif which == "hotkey":
             st.set(("show", "hotkey"), value)
