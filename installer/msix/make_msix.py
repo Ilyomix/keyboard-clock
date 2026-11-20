@@ -52,7 +52,8 @@ MANIFEST = """<?xml version="1.0" encoding="utf-8"?>
     <Application Id="KeyboardClock" Executable="KeyboardClock.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements DisplayName="Keyboard Clock" Description="{description}" BackgroundColor="transparent"
                           Square150x150Logo="Assets\\Square150x150Logo.png" Square44x44Logo="Assets\\Square44x44Logo.png">
-        <uap:DefaultTile Square71x71Logo="Assets\\Square71x71Logo.png" Square310x310Logo="Assets\\Square310x310Logo.png" />
+        <uap:DefaultTile Square71x71Logo="Assets\\Square71x71Logo.png" Square310x310Logo="Assets\\Square310x310Logo.png"
+                         Wide310x150Logo="Assets\\Wide310x150Logo.png" />
       </uap:VisualElements>
       <Extensions>
         <!-- Starts with Windows (the user turns it off in Settings > Apps > Startup). This copy of the app starts
@@ -79,6 +80,22 @@ def logo(path, size):
         f.write(kc.png_bytes(size, size, rgba))
 
 
+def wide_logo(path, w=310, h=150):
+    """The icon centred on a transparent 310x150 tile."""
+    size = h * 4 // 5
+    icon = kc.icon_pixels(size)
+    rgba = bytearray(w * h * 4)
+    x0, y0 = (w - size) // 2, (h - size) // 2
+    for y in range(size):
+        row = icon[y * size * 4:(y + 1) * size * 4]
+        conv = bytearray(len(row))
+        conv[0::4], conv[1::4], conv[2::4], conv[3::4] = row[2::4], row[1::4], row[0::4], row[3::4]
+        i = ((y0 + y) * w + x0) * 4
+        rgba[i:i + size * 4] = conv
+    with open(path, "wb") as f:
+        f.write(kc.png_bytes(w, h, rgba))
+
+
 def makeappx():
     found = sorted(glob.glob(r"C:\Program Files (x86)\Windows Kits\10\bin\10.*\x64\makeappx.exe"))
     if not found:
@@ -99,6 +116,7 @@ def main():
     os.makedirs(os.path.join(out, "Assets"))
     for name, size in LOGOS.items():
         logo(os.path.join(out, "Assets", name), size)
+    wide_logo(os.path.join(out, "Assets", "Wide310x150Logo.png"))
     resources = "\n".join(f'    <Resource Language="{tag}" />' for tag in LANGS.values())
     manifest = MANIFEST.format(
         name=escape(os.environ.get("MSIX_IDENTITY_NAME") or "Ilyomix.KeyboardClock"),
