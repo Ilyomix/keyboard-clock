@@ -58,4 +58,4 @@ body:
     id: version
     attributes:
       label: Keyboard Clock version and Windows version
-      placeholder: Keyboard Clock 1.0.0, Windows 11 24H2
+      placeholder: Keyboard Clock 1.0.1, Windows 11 24H2

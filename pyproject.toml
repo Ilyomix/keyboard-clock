@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "keyboard-clock"
-version = "1.0.0"
+version = "1.0.1"
 description = "The time in big digits on your RGB keyboard while you are away: Logitech G HUB, Windows Dynamic Lighting (Razer, Corsair, ASUS, SteelSeries, HyperX) and OpenRGB. Timer, Pomodoro, alarms, music, font editor, 6 languages."
 readme = "README.md"
 license = "MIT"

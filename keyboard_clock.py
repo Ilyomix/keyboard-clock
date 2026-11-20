@@ -33,7 +33,7 @@ import zlib
 from array import array
 from ctypes import wintypes
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 APP = "Keyboard Clock"
 APP_ID = "KeyboardClock"
 APP_AUMID = "Ilyomix.KeyboardClock"          # who sends our notifications, for Windows
