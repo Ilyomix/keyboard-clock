@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SignPath artifact configuration "apps": first signing request of a release (.github/workflows/release.yml).
+     The portable app and command line, the installed app and the installer's uninstaller, all built from this
+     repository. -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file-set product-name="Keyboard Clock" product-version="${version}">
+      <include path="keyboard-clock.exe" />
+      <include path="KeyboardClockPortable.exe" />
+      <include path="app/KeyboardClock.exe" />
+      <include path="uninstaller/unins000.exe" />
+      <for-each>
+        <authenticode-sign />
+      </for-each>
+    </pe-file-set>
+  </zip-file>
+</artifact-configuration>

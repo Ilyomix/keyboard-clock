@@ -1,0 +1,36 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  check:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile
+        run: python -m py_compile keyboard_clock.py
+      - name: Tests
+        run: python -m unittest discover -s tests -v
+      - name: The version is the same everywhere
+        shell: pwsh
+        run: |
+          $code = (Select-String -Path keyboard_clock.py -Pattern '^__version__ = "(.+)"').Matches[0].Groups[1].Value
+          $project = (Select-String -Path pyproject.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
+          if ($code -ne $project) { throw "keyboard_clock.py says $code, pyproject.toml says $project" }
+          "version $code"
+      - name: Smoke test (no keyboard on CI)
+        run: |
+          python keyboard_clock.py --version
+          python keyboard_clock.py --preview preview.png
+          python keyboard_clock.py --screenshot clock clock.png
+      - name: Install as a package
+        run: |
+          python -m pip install .
+          keyboard-clock --version

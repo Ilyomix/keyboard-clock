@@ -2113,6 +2113,7 @@ STRINGS = {
         "bg_music": "Music", "music_pulse": "Pulse", "music_spectrum": "Equalizer",
         "music_desc": "The other keys follow the sound your PC plays. It is analysed live, never recorded.",
         "music_sens": "Sensitivity",
+        "startup_store_desc": "Turn Keyboard Clock on or off in Windows' startup apps",
     },
     "fr": {
         "status_showing": "Affichée sur le clavier", "status_waiting": "S'affiche après {delay} d'inactivité",
@@ -2218,6 +2219,7 @@ STRINGS = {
         "bg_music": "Musique", "music_pulse": "Pulsation", "music_spectrum": "Égaliseur",
         "music_desc": "Les autres touches suivent le son de votre PC. Il est analysé en direct, jamais enregistré.",
         "music_sens": "Sensibilité",
+        "startup_store_desc": "Activez ou désactivez Keyboard Clock dans les applications de démarrage de Windows",
     },
     "es": {
         "status_showing": "Ahora en el teclado", "status_waiting": "Aparece tras {delay} sin actividad",
@@ -2322,6 +2324,7 @@ STRINGS = {
         "bg_music": "Música", "music_pulse": "Pulso", "music_spectrum": "Ecualizador",
         "music_desc": "Las demás teclas siguen el sonido de tu PC. Se analiza en directo, nunca se graba.",
         "music_sens": "Sensibilidad",
+        "startup_store_desc": "Activa o desactiva Keyboard Clock en las aplicaciones de inicio de Windows",
     },
     "de": {
         "status_showing": "Gerade auf der Tastatur", "status_waiting": "Erscheint nach {delay} ohne Eingabe",
@@ -2429,6 +2432,7 @@ STRINGS = {
         "bg_music": "Musik", "music_pulse": "Puls", "music_spectrum": "Equalizer",
         "music_desc": "Die anderen Tasten folgen dem Ton deines PCs. Er wird live analysiert, nie aufgenommen.",
         "music_sens": "Empfindlichkeit",
+        "startup_store_desc": "Schalte Keyboard Clock in den Autostart-Apps von Windows ein oder aus",
     },
     "it": {
         "status_showing": "Ora sulla tastiera", "status_waiting": "Appare dopo {delay} di inattività",
@@ -2534,6 +2538,7 @@ STRINGS = {
         "bg_music": "Musica", "music_pulse": "Pulsazione", "music_spectrum": "Equalizzatore",
         "music_desc": "Gli altri tasti seguono il suono del tuo PC. Viene analizzato dal vivo, mai registrato.",
         "music_sens": "Sensibilità",
+        "startup_store_desc": "Attiva o disattiva Keyboard Clock nelle app di avvio di Windows",
     },
     "pt": {
         "status_showing": "No teclado agora", "status_waiting": "Aparece após {delay} sem atividade",
@@ -2637,6 +2642,7 @@ STRINGS = {
         "bg_music": "Música", "music_pulse": "Pulso", "music_spectrum": "Equalizador",
         "music_desc": "As outras teclas seguem o som do seu PC. Ele é analisado ao vivo, nunca gravado.",
         "music_sens": "Sensibilidade",
+        "startup_store_desc": "Ative ou desative o Keyboard Clock nos aplicativos de inicialização do Windows",
     },
 }
 _lang = {"code": "en"}
@@ -3505,13 +3511,16 @@ class Tray:
         else:
             items += [dict(kind="action", id=41, icon="timer", text=tr("timer_start", n=s["timer"]["minutes"])),
                       dict(kind="action", id=42, icon="sync", text=tr("pomodoro"))]
+        store = is_store()
         items += [dict(kind="sep"),
+                  dict(kind="action", id=20, icon="power", text=tr("start_windows"), link=True) if store else
                   dict(kind="toggle", id=20, icon="power", text=tr("start_windows"), on=self.autostart),
-                  dict(kind="sep"), dict(kind="label", text=tr("about")),
-                  dict(kind="action", id=26, icon="sync", text=tr("updates"), busy=self.checking,
-                       status=self._check_status(), statuses=(tr("up_to_date"), tr("check_failed"), "v00.00.00")),
-                  dict(kind="toggle", id=24, icon="clock", text=tr("auto_check"), on=s["check_updates"]),
-                  dict(kind="action", id=23, icon="person", text=tr("made_by", author=AUTHOR), link=True),
+                  dict(kind="sep"), dict(kind="label", text=tr("about"))]
+        if not store:
+            items += [dict(kind="action", id=26, icon="sync", text=tr("updates"), busy=self.checking,
+                           status=self._check_status(), statuses=(tr("up_to_date"), tr("check_failed"), "v00.00.00")),
+                      dict(kind="toggle", id=24, icon="clock", text=tr("auto_check"), on=s["check_updates"])]
+        items += [dict(kind="action", id=23, icon="person", text=tr("made_by", author=AUTHOR), link=True),
                   dict(kind="action", id=22, icon="star", text=tr("star"), accent=True, link=True),
                   dict(kind="action", id=21, icon="doc", text=tr("open_log")),
                   dict(kind="sep"),
@@ -3635,7 +3644,7 @@ class Tray:
         elif cid == 3:
             c.pause(0 if c.paused() else 3600)
             self.refresh()
-        elif cid == 20:
+        elif cid == 20 and not is_store():
             set_autostart(not self.autostart, self.argv)
             self.autostart = autostart_enabled()
         elif cid == 24:
@@ -3660,6 +3669,8 @@ class Tray:
             user32.PostMessageW(self.flyout, 0x0010, 0, 0)
             if cid == 2:
                 c.show_for(15)
+            elif cid == 20:
+                os.startfile(STARTUP_SETTINGS)
             elif cid == 21:
                 os.startfile(LOG_PATH)
             elif cid == 22:
@@ -3738,6 +3749,8 @@ def latest_release():
 
 def install_kind():
     if getattr(sys, "frozen", False):
+        if "\\windowsapps\\" in sys.executable.lower():
+            return "store"                               # updates and startup belong to the Store and Windows
         here = os.path.dirname(sys.executable)
         return "installer" if os.path.exists(os.path.join(here, "unins000.exe")) else "portable"
     return "pip" if "site-packages" in os.path.abspath(__file__).lower() else "script"
@@ -3805,6 +3818,13 @@ def apply_update(info):
 
 def _version_tuple(v):
     return tuple(int(x) for x in re.findall(r"\d+", v)[:3])
+
+
+def is_store():
+    return install_kind() == "store"
+
+
+STARTUP_SETTINGS = "ms-settings:startupapps"
 
 
 def update_url(clock):
@@ -5113,6 +5133,12 @@ class AppWindow:
         y = self._header(y, tr("nav_settings"), tr("settings_sub"))
         rh = p(68)
         self._card(y, rh)
+        if is_store():
+            bx = self._button("autostart", x1 - p(20), y + (rh - p(34)) / 2, tr("settings_open"), "secondary",
+                              icon="link")
+            self._row_text(y, rh, "power", tr("start_windows"), tr("startup_store_desc"), right=bx - p(16))
+            y += rh + p(28)
+            return self._page_settings_rest(y)
         y = self._toggle_row("autostart", y, "power", tr("start_windows"), tr("settings_start_desc"), t.autostart, rh)
         y += p(28)
         y = self._label(y, tr("settings_updates"))
@@ -5135,6 +5161,10 @@ class AppWindow:
         self._sep(ry)
         self._toggle_row("auto_check", ry, "clock", tr("auto_check"), tr("settings_check_desc"), s["check_updates"], rh)
         y += rh * rows + p(28)
+        return self._page_settings_rest(y)
+
+    def _page_settings_rest(self, y):
+        p, s, x1, rh = self.px, self.store.s, self.cx1, self.px(68)
         y = self._label(y, tr("settings_lang"))
         self._card(y, rh)
         pw = p(230)
@@ -5428,8 +5458,11 @@ class AppWindow:
             m = Model(c.model_name())
             c.show_for(8.5, lambda t, m=m: self.font_frame(m, str(int(t / 0.85) % 10)))
         elif wid == "autostart":
-            set_autostart(not t.autostart, t.argv)
-            t.autostart = autostart_enabled()
+            if is_store():
+                os.startfile(STARTUP_SETTINGS)
+            else:
+                set_autostart(not t.autostart, t.argv)
+                t.autostart = autostart_enabled()
         elif wid == "auto_check":
             st.set(("check_updates",), not s["check_updates"])
         elif wid == "check":
@@ -5825,8 +5858,9 @@ def run_with_tray(args, stop, clock, argv):
     t = threading.Thread(target=worker, name="keyboard-clock-engine", daemon=True)
     tray.worker = t
     t.start()
-    threading.Thread(target=update_checker, name="keyboard-clock-update", daemon=True,
-                     args=(clock, stop, lambda: user32.PostMessageW(tray.hwnd, Tray.WM_UPDATE, 0, 0))).start()
+    if not is_store():                                   # the Store updates its own installs
+        threading.Thread(target=update_checker, name="keyboard-clock-update", daemon=True,
+                         args=(clock, stop, lambda: user32.PostMessageW(tray.hwnd, Tray.WM_UPDATE, 0, 0))).start()
     if not (args.from_autostart or args.after_update):
         tray.open_app()
     tray.loop()
@@ -5879,6 +5913,8 @@ def _other_quit(stop, tries=100):
 
 def main(argv=None):
     args = parse_args(argv)
+    if os.path.basename(sys.executable).lower().startswith("keyboardclockbackground"):
+        args.background = args.from_autostart = True     # the Store package's startup task
     for stream in (sys.stdout, sys.stderr):
         if stream is not None and hasattr(stream, "reconfigure"):
             stream.reconfigure(errors="replace")      # the Windows console can't show every character
@@ -5965,7 +6001,8 @@ def main(argv=None):
     if args.background or sys.stdout is None:
         k32.FreeConsole()
         sys.stdout = sys.stderr = None
-    set_app_identity()
+    if not is_store():                                   # a Store install has the package's identity
+        set_app_identity()
     sys.unraisablehook = lambda u: log(f"Error: {u.exc_value!r} in {getattr(u.object, '__qualname__', u.object)!r}")
     try:
         os.makedirs(DATA_DIR, exist_ok=True)

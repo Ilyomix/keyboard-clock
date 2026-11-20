@@ -1,0 +1,281 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      test_signing:
+        description: "Sign with a throwaway self-signed certificate (tests the signing steps without SignPath)"
+        type: boolean
+        default: false
+permissions:
+  contents: write
+  actions: read  # SignPath downloads the unsigned files from this run's artifacts
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      # Code signing (CODE_SIGNING.md) turns on once the repository variable SIGNPATH_ORGANIZATION_ID and the secret
+      # SIGNPATH_API_TOKEN exist. Until then releases are built unsigned.
+      SIGNPATH_ORGANIZATION_ID: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+      SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG || 'keyboard-clock' }}
+      SIGNPATH_TOKEN_SET: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
+      TEST_SIGNING: ${{ inputs.test_signing }}
+      # Microsoft Store identity (Partner Center > Product management > Product identity)
+      MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME }}
+      MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER }}
+      MSIX_PUBLISHER_NAME: ${{ vars.MSIX_PUBLISHER_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Version and code signing
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          if ($version -notmatch '^\d+\.\d+\.\d+') { $version = (Select-String -Path pyproject.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value }
+          $code = (Select-String -Path keyboard_clock.py -Pattern '^__version__ = "(.+)"').Matches[0].Groups[1].Value
+          if ($code -ne $version) { throw "the tag says $version but keyboard_clock.py says $code: in-app updates would loop" }
+          $tag = "${{ github.ref }}".StartsWith("refs/tags/")
+          $sign = "none"
+          if ($env:SIGNPATH_ORGANIZATION_ID) {
+            if ($env:SIGNPATH_TOKEN_SET -ne "true") { throw "SIGNPATH_ORGANIZATION_ID is set but the SIGNPATH_API_TOKEN secret is missing" }
+            $sign = "signpath"
+          } elseif ($env:TEST_SIGNING -eq "true") {
+            if ($tag) { throw "test signing is for branch runs only: a tag run would publish the test-signed files" }
+            $sign = "test"
+          }
+          $policy = if ($tag) { "release-signing" } else { "test-signing" }
+          "VERSION=$version" >> $env:GITHUB_ENV
+          "SIGN=$sign" >> $env:GITHUB_ENV
+          "SIGNPATH_POLICY=$policy" >> $env:GITHUB_ENV
+          "TRUSTED_SIGNATURES=$(($sign -eq 'test') -or ($sign -eq 'signpath' -and $tag))" >> $env:GITHUB_ENV
+          "ISCC=${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" >> $env:GITHUB_ENV
+          "Keyboard Clock $version, code signing: $sign"
+
+      - name: Tests
+        run: python -m unittest discover -s tests
+
+      - name: Build the apps (PyInstaller)
+        run: |
+          python -m pip install pyinstaller
+          python installer/version_info.py $env:VERSION build/version
+          $icon = "${{ github.workspace }}\assets\keyboard-clock.ico"
+          $ver = "${{ github.workspace }}\build\version"
+          pyinstaller --noconfirm --onefile --console   --name keyboard-clock        --icon $icon --version-file "$ver\cli.txt"      keyboard_clock.py
+          pyinstaller --noconfirm --onefile --noconsole --name KeyboardClockPortable --icon $icon --version-file "$ver\portable.txt" keyboard_clock.py
+          pyinstaller --noconfirm --onedir  --noconsole --name KeyboardClock         --icon $icon --version-file "$ver\app.txt"      --workpath build/app --specpath build/app keyboard_clock.py
+          dist\keyboard-clock.exe --version
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      # Signing happens in two rounds: first the apps and the installer's uninstaller, then the installer built
+      # from them. The folders match the artifact configurations in installer/signpath/.
+      - name: Collect the apps to sign
+        if: env.SIGN != 'none'
+        run: |
+          & $env:ISCC /Q "/DMyAppVersion=$env:VERSION" /DSignedUninstaller installer\keyboard_clock.iss
+          $global:LASTEXITCODE = 0
+          $uninstaller = @(Get-ChildItem build\uninstaller\uninst-*.e32)
+          if ($uninstaller.Count -ne 1) { throw "expected 1 uninstaller to sign, found $($uninstaller.Count)" }
+          "UNINSTALLER=$($uninstaller[0].FullName)" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force build\unsigned\apps\app, build\unsigned\apps\uninstaller | Out-Null
+          Copy-Item dist\keyboard-clock.exe, dist\KeyboardClockPortable.exe build\unsigned\apps
+          Copy-Item dist\KeyboardClock\KeyboardClock.exe build\unsigned\apps\app
+          Copy-Item $uninstaller[0].FullName build\unsigned\apps\uninstaller\unins000.exe
+          Get-ChildItem build\unsigned\apps -Recurse -File | ForEach-Object {
+            $name, $ver = $_.VersionInfo.ProductName, $_.VersionInfo.ProductVersion
+            "{0,10:N0}  {1}  ({2} {3})" -f $_.Length, $_.FullName, "$name".Trim(), "$ver".Trim()
+            if ("$name".Trim() -ne "Keyboard Clock" -or "$ver".Trim() -ne $env:VERSION) { throw "$($_.Name): product name and version must be Keyboard Clock $env:VERSION" }
+          }
+
+      - name: Upload the apps for signing
+        id: unsigned-apps
+        if: env.SIGN == 'signpath'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-apps
+          path: build/unsigned/apps
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Sign the apps (SignPath)
+        if: env.SIGN == 'signpath'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          artifact-configuration-slug: apps
+          github-artifact-id: ${{ steps.unsigned-apps.outputs.artifact-id }}
+          parameters: |
+            version: ${{ toJSON(env.VERSION) }}
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: build/signed/apps
+
+      - name: Sign the apps (self-signed test certificate)
+        if: env.SIGN == 'test'
+        shell: powershell
+        run: |
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=Keyboard Clock test signing (not trusted)" -CertStoreLocation Cert:\CurrentUser\My
+          $root = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root", "LocalMachine")
+          $root.Open("ReadWrite"); $root.Add($cert); $root.Close()
+          "TEST_CERT=$($cert.Thumbprint)" | Out-File -Append -Encoding ascii $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force build\signed | Out-Null
+          Copy-Item build\unsigned\apps build\signed -Recurse
+          Get-ChildItem build\signed\apps -Recurse -Filter *.exe | ForEach-Object {
+            $s = Set-AuthenticodeSignature $_.FullName $cert -HashAlgorithm SHA256
+            if ($s.Status -ne "Valid") { throw "$($_.Name): $($s.Status) $($s.StatusMessage)" }
+          }
+
+      - name: Put the signed apps in place
+        if: env.SIGN != 'none'
+        run: |
+          $s = "build\signed\apps"
+          Copy-Item "$s\keyboard-clock.exe", "$s\KeyboardClockPortable.exe" dist -Force
+          Copy-Item "$s\app\KeyboardClock.exe" dist\KeyboardClock -Force
+          Copy-Item "$s\uninstaller\unins000.exe" $env:UNINSTALLER -Force
+          dist\keyboard-clock.exe --version
+
+      - name: Build the installer (Inno Setup)
+        run: |
+          $signed = @(if ($env:SIGN -ne "none") { "/DSignedUninstaller" })
+          & $env:ISCC "/DMyAppVersion=$env:VERSION" @signed installer\keyboard_clock.iss
+          if ($LASTEXITCODE) { throw "ISCC failed" }
+          $v = (Get-Item dist\KeyboardClockSetup.exe).VersionInfo
+          $name, $ver = "$($v.ProductName)".Trim(), "$($v.ProductVersion)".Trim()
+          "KeyboardClockSetup.exe: $name $ver"
+          if ($name -ne "Keyboard Clock" -or $ver -ne $env:VERSION) { throw "KeyboardClockSetup.exe: product name and version must be Keyboard Clock $env:VERSION" }
+
+      - name: Upload the installer for signing
+        id: unsigned-installer
+        if: env.SIGN == 'signpath'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-installer
+          path: dist/KeyboardClockSetup.exe
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Sign the installer (SignPath)
+        if: env.SIGN == 'signpath'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
+          parameters: |
+            version: ${{ toJSON(env.VERSION) }}
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: build/signed/installer
+
+      - name: Sign the installer (self-signed test certificate)
+        if: env.SIGN == 'test'
+        shell: powershell
+        run: |
+          $cert = Get-Item "Cert:\CurrentUser\My\$env:TEST_CERT"
+          New-Item -ItemType Directory -Force build\signed\installer | Out-Null
+          Copy-Item dist\KeyboardClockSetup.exe build\signed\installer
+          $s = Set-AuthenticodeSignature build\signed\installer\KeyboardClockSetup.exe $cert -HashAlgorithm SHA256
+          if ($s.Status -ne "Valid") { throw "KeyboardClockSetup.exe: $($s.Status) $($s.StatusMessage)" }
+
+      - name: Check the signatures
+        if: env.SIGN != 'none'
+        run: |
+          Copy-Item build\signed\installer\KeyboardClockSetup.exe dist -Force
+          foreach ($f in "dist\KeyboardClockSetup.exe", "dist\KeyboardClockPortable.exe", "dist\keyboard-clock.exe", "dist\KeyboardClock\KeyboardClock.exe") {
+            $s = Get-AuthenticodeSignature $f
+            $ok = if ($env:TRUSTED_SIGNATURES -eq "True") { $s.Status -eq "Valid" } else { $s.SignerCertificate -and $s.Status -notin "NotSigned", "HashMismatch" }
+            if (-not $ok) { throw "$f is not signed correctly: $($s.Status) $($s.StatusMessage)" }
+            "{0}: {1} ({2})" -f $f, $s.SignerCertificate.Subject, $s.Status
+          }
+
+      - name: Test install and uninstall
+        timeout-minutes: 10
+        run: |
+          $start = Get-Date
+          $logs = "$env:RUNNER_TEMP\setup-logs"
+          New-Item -ItemType Directory -Force $logs | Out-Null
+          function Invoke-Setup($exe, [string[]]$arguments, $what) {
+            $p = Start-Process $exe -ArgumentList $arguments -PassThru
+            $null = $p.Handle
+            if (-not $p.WaitForExit(180000)) {
+              Get-CimInstance Win32_Process | Format-Table ProcessId, ParentProcessId, Name, CommandLine -AutoSize -Wrap | Out-String -Width 400
+              throw "$what still running after 3 minutes"
+            }
+            if ($p.ExitCode -ne 0) { throw "$what failed: exit code $($p.ExitCode)" }
+          }
+          Invoke-Setup dist\KeyboardClockSetup.exe '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=autostart',"/LOG=$logs\setup.log" "Setup"
+          $app = "$env:LOCALAPPDATA\Programs\Keyboard Clock"
+          if (-not (Test-Path "$app\KeyboardClock.exe")) { throw "KeyboardClock.exe was not installed" }
+          & "$app\keyboard-clock-cli.exe" --version
+          $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+          if (-not (Get-ItemProperty $runKey).KeyboardClock) { throw "autostart entry missing" }
+          if (-not (Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Keyboard Clock.lnk")) { throw "Start menu shortcut missing" }
+          & "$app\keyboard-clock-cli.exe" --check-updates off
+          if (-not (Select-String "$env:LOCALAPPDATA\KeyboardClock\settings.json" -Pattern '"check_updates": false' -SimpleMatch -Quiet)) { throw "--check-updates off not saved" }
+          Invoke-Setup "$app\unins000.exe" '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=$logs\uninstall.log" "Uninstall"
+          for ($i = 0; $i -lt 60 -and (Test-Path "$app\KeyboardClock.exe"); $i++) { Start-Sleep 1 }
+          if (Test-Path "$app\KeyboardClock.exe") { throw "KeyboardClock.exe still there after uninstall" }
+          if ((Get-ItemProperty $runKey).KeyboardClock) { throw "autostart entry left behind" }
+          $left = Get-Process | Where-Object { try { $_.StartTime -gt $start } catch { $false } }
+          if ($left | Where-Object { $_.ProcessName -like '*keyboard*' }) { throw "Keyboard Clock still running after uninstall" }
+          "install / uninstall OK"
+
+      - name: Installer logs
+        if: failure()
+        run: |
+          Get-ChildItem "$env:RUNNER_TEMP\setup-logs" -ErrorAction SilentlyContinue | ForEach-Object { "== $($_.Name)"; Get-Content $_.FullName }
+
+      - name: Microsoft Store package (MSIX)
+        run: python installer/msix/make_msix.py $env:VERSION
+
+      - name: Python wheel, single file and checksums (used by in-app updates)
+        run: |
+          python -m pip wheel --no-deps -w dist .
+          Copy-Item keyboard_clock.py dist\keyboard_clock.py
+          $files = @("KeyboardClockSetup.exe", "KeyboardClockPortable.exe", "keyboard-clock.exe", "keyboard_clock.py") + (Get-ChildItem dist\*.whl).Name
+          $lines = foreach ($f in $files) { "{0}  {1}" -f (Get-FileHash "dist\$f" -Algorithm SHA256).Hash.ToLower(), $f }
+          $lines | Set-Content -Encoding ascii dist\SHA256SUMS.txt
+          Get-Content dist\SHA256SUMS.txt
+
+      - name: Release notes
+        run: |
+          $policy = "[Code signing policy](https://github.com/Ilyomix/keyboard-clock/blob/main/CODE_SIGNING.md)"
+          $note = if ($env:SIGN -eq "signpath") {
+            "The Windows files are signed. Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/). $policy" } else {
+            "The Windows files are not code-signed yet, so SmartScreen may warn: click *More info → Run anyway*, or get Keyboard Clock from the Microsoft Store. $policy" }
+          $note | Set-Content -Encoding utf8 build\release-notes.md
+          Get-Content build\release-notes.md
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: build/release-notes.md
+          files: |
+            dist/KeyboardClockSetup.exe
+            dist/KeyboardClockPortable.exe
+            dist/keyboard-clock.exe
+            dist/keyboard_clock.py
+            dist/*.whl
+            dist/SHA256SUMS.txt
+          generate_release_notes: true
+
+      - name: Keep the installer and the Store package as build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeyboardClock-${{ env.VERSION }}
+          path: |
+            dist/KeyboardClockSetup.exe
+            dist/KeyboardClock.msix
+            dist/SHA256SUMS.txt

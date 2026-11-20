@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "keyboard-clock"
+version = "0.1.0"
+description = "The time in big digits on your RGB keyboard while you are away: Logitech G HUB per-key lighting, timer, Pomodoro, alarms, music, font editor, tray app, 6 languages."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "licenses/Inter-OFL.txt"]
+requires-python = ">=3.9"
+authors = [{ name = "Ilyomix" }]
+keywords = ["keyboard-clock", "rgb-keyboard", "logitech", "logitech-g", "g-hub", "per-key-rgb", "clock", "pomodoro",
+            "timer", "alarm", "led", "windows"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
+    "Programming Language :: Python :: 3",
+    "Topic :: Desktop Environment",
+    "Topic :: System :: Hardware",
+]
+
+[project.urls]
+Homepage = "https://github.com/Ilyomix/keyboard-clock"
+Issues = "https://github.com/Ilyomix/keyboard-clock/issues"
+
+[project.scripts]
+keyboard-clock = "keyboard_clock:main"
+
+[project.gui-scripts]
+keyboard-clock-bg = "keyboard_clock:main"
+
+[tool.setuptools]
+py-modules = ["keyboard_clock"]
