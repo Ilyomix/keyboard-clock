@@ -5,7 +5,7 @@
 - Website: https://ilyomix.github.io/keyboard-clock/
 - Source code (MIT): https://github.com/Ilyomix/keyboard-clock
 - Download (Windows installer): https://github.com/Ilyomix/keyboard-clock/releases/latest/download/KeyboardClockSetup.exe
-- Version: 1.0.1
+- Version: 1.0.2
 
 ## Features
 

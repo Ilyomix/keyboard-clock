@@ -33,7 +33,7 @@
 ---
 
 Allontanati dal PC e **Keyboard Clock** trasforma la tua tastiera in un orologio che leggi dall'altra parte della stanza.
-Prima le ore, poi i minuti, in due grandi cifre disegnate tasto per
+Prima le ore, poi i minuti (13: poi :37), in due grandi cifre disegnate tasto per
 tasto sui tasti funzione, sulla fila dei numeri e sulle lettere, una cifra su ogni metà della tastiera. I secondi riempiono i nove tasti sopra le frecce. Tocca
 il mouse o un tasto qualsiasi e la tua illuminazione di sempre torna subito.
 

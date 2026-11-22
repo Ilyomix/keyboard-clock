@@ -33,7 +33,7 @@
 ---
 
 Step away from your PC and **Keyboard Clock** turns your keyboard into a clock you can read from across the room.
-First the hours, then the minutes, in two big digits drawn key by key
+First the hours, then the minutes (13: then :37), in two big digits drawn key by key
 over the F-keys, the number row and the letters, one digit on each half of the keyboard. The seconds fill the nine keys above the arrows. Touch the mouse or
 any key and your usual lighting is back at once.
 

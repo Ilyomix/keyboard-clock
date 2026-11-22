@@ -40,7 +40,7 @@
     "TKL e tamanho completo"
   ],
   "how_h2": "O seu teclado vira um relógio",
-  "how_p": "Cada dígito é desenhado à mão sobre teclas de verdade. O teclado mostra dois dígitos de cada vez, um em cada metade: primeiro as horas, depois os minutos. Os segundos preenchem as nove teclas acima das setas.",
+  "how_p": "Cada dígito é desenhado à mão sobre teclas de verdade. O teclado mostra dois dígitos de cada vez, um em cada metade: primeiro as horas, depois os minutos, com dois-pontos para diferenciá-los (13: depois :37). Os segundos preenchem as nove teclas acima das setas.",
   "steps": [
     {
       "t": "Instale",

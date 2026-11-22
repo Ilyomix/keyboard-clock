@@ -33,7 +33,7 @@
 ---
 
 Éloignez-vous de votre PC : **Keyboard Clock** transforme votre clavier en horloge lisible depuis l'autre bout de la
-pièce. D'abord les heures, puis les minutes, en deux gros chiffres
+pièce. D'abord les heures, puis les minutes (13: puis :37), en deux gros chiffres
 dessinés touche par touche sur les touches F, la rangée des chiffres et les lettres, un chiffre sur chaque moitié du clavier. Les secondes remplissent les neuf
 touches au-dessus des flèches. Touchez la souris ou une touche, et votre éclairage habituel revient aussitôt.
 

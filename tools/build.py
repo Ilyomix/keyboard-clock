@@ -58,6 +58,11 @@ def digits(text):
     return keys
 
 
+def colon(what):
+    """The colon's keys: after the hours ("hours") or before the minutes ("minutes"), as in the app."""
+    return list(kc.COLON[what][0])
+
+
 def box(x, y, w, h, scale, ox, oy):
     g = 0.07
     return ox + (x + g) * scale, oy + (y + g) * scale, (w - 2 * g) * scale, (h - 2 * g) * scale
@@ -115,7 +120,7 @@ def banner_svg():
              f'<rect x="{ox - p:.1f}" y="{oy - p:.1f}" width="{MODEL.width * scale + 2 * p:.1f}" height="{MODEL.height * scale + 2 * p:.1f}"'
              f' rx="{0.42 * scale:.1f}" fill="{hexc(CASE)}" stroke="#23262f" stroke-width="2"/>',
              f'<g fill="{hexc(OFF)}">{svg_keys(scale, ox, oy)}</g>',
-             layer("h", digits("13"), HOURS), layer("m", digits("37"), MINUTES)]
+             layer("h", digits("13") + colon("hours"), HOURS), layer("m", colon("minutes") + digits("37"), MINUTES)]
     for i, k in enumerate(kc.SECONDS_BLOCK):
         parts.append(layer(f"s{i}", [k], SECONDS))
     parts.append("</svg>")
@@ -174,7 +179,7 @@ def social_preview(path, title, subtitle):
     sd.ellipse((-130, -240, 470, 360), fill=(255, 90, 0))
     sd.ellipse((830, 300, 1470, 940), fill=(0, 170, 230))
     img = Image.blend(bg, spots.filter(ImageFilter.GaussianBlur(128)), 0.45).convert("RGBA")
-    lit = {k: HOURS for k in digits("13")}
+    lit = {k: HOURS for k in digits("13") + colon("hours")}
     lit.update({k: SECONDS for k in kc.SECONDS_BLOCK[:3]})
     kb, pad = keyboard_png(54, lit)
     img.alpha_composite(kb, ((W - kb.width) // 2, H - kb.height + pad - 30))
@@ -275,7 +280,7 @@ def load(lang):
 def demo_svg(label):
     scale, p = 40, 0.32 * 40 + 2
     w, h = MODEL.width * scale + 2 * p, MODEL.height * scale + 2 * p
-    lit = {k: HOURS for k in digits("13")}
+    lit = {k: HOURS for k in digits("13") + colon("hours")}
     keys = []
     for k, x, y, kw, kh in MODEL.rects:
         bx, by, bw, bh = box(x, y, kw, kh, scale, p, p)
@@ -338,6 +343,7 @@ def page(lang, T, all_t, template):
                      for k, v in T["demo_themes"].items())
     data = {"rects": [[k, x, y, w, h] for k, x, y, w, h in MODEL.rects],
             "font": {ch: [kc.classic_keys(MODEL, ch, 0), kc.classic_keys(MODEL, ch, 1)] for ch in "0123456789"},
+            "colon": {"h": colon("hours"), "m": colon("minutes")},
             "seconds": list(kc.SECONDS_BLOCK), "off": OFF, "sec": SECONDS, "width": MODEL.width,
             "themes": {"neon": {"h": HOURS, "m": MINUTES}, "sunset": {"g": ["#ff2e63", "#ff8a00", "#ffd200"]},
                        "matrix": {"h": kc.hex_color("#00ff41"), "m": kc.hex_color("#00c832")}, "rainbow": {"r": 1}}}

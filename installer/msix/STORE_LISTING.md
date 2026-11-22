@@ -65,7 +65,7 @@ Keyboard Clock is free and open source (MIT license): no account, no ads, no tel
 ### What's new in this version
 
 ```text
-First version on the Microsoft Store. The Store keeps Keyboard Clock up to date, and Windows starts it when you sign in (you can turn that off in Settings > Apps > Startup). Used Keyboard Clock before? Your settings carry over.
+The hours and the minutes can't be mixed up any more: a colon follows the hours and comes before the minutes, so the keyboard reads 13: then :37.
 ```
 
 ### Product features
@@ -159,7 +159,7 @@ Keyboard Clock est gratuit et open source (licence MIT) : pas de compte, pas de 
 ### What's new in this version
 
 ```text
-Première version sur le Microsoft Store. Le Store tient Keyboard Clock à jour, et Windows le lance à l'ouverture de session (désactivable dans Paramètres > Applications > Démarrage). Vous utilisiez déjà Keyboard Clock ? Vos réglages sont conservés.
+Les heures et les minutes ne se confondent plus : un deux-points suit les heures et précède les minutes, le clavier affiche 13: puis :37.
 ```
 
 ### Product features
@@ -253,7 +253,7 @@ Keyboard Clock es gratuito y de código abierto (licencia MIT): sin cuenta, sin 
 ### What's new in this version
 
 ```text
-Primera versión en Microsoft Store. La Store mantiene Keyboard Clock actualizado y Windows lo inicia al iniciar sesión (puedes desactivarlo en Configuración > Aplicaciones > Inicio). ¿Ya usabas Keyboard Clock? Se conservan tus ajustes.
+Ya no se confunden las horas con los minutos: dos puntos siguen a las horas y preceden a los minutos, así el teclado muestra 13: y luego :37.
 ```
 
 ### Product features
@@ -347,7 +347,7 @@ Keyboard Clock ist kostenlos und Open Source (MIT-Lizenz): kein Konto, keine Wer
 ### What's new in this version
 
 ```text
-Erste Version im Microsoft Store. Der Store hält Keyboard Clock aktuell, und Windows startet es bei der Anmeldung (abschaltbar unter Einstellungen > Apps > Autostart). Du hast Keyboard Clock schon benutzt? Deine Einstellungen bleiben erhalten.
+Stunden und Minuten lassen sich nicht mehr verwechseln: Ein Doppelpunkt folgt auf die Stunden und steht vor den Minuten, die Tastatur zeigt also 13: und dann :37.
 ```
 
 ### Product features
@@ -441,7 +441,7 @@ Keyboard Clock è gratuito e open source (licenza MIT): nessun account, nessuna 
 ### What's new in this version
 
 ```text
-Prima versione su Microsoft Store. Lo Store tiene aggiornato Keyboard Clock e Windows lo avvia all'accesso (puoi disattivarlo in Impostazioni > App > Avvio). Usavi già Keyboard Clock? Le tue impostazioni restano.
+Ore e minuti non si confondono più: i due punti seguono le ore e precedono i minuti, così la tastiera mostra 13: e poi :37.
 ```
 
 ### Product features
@@ -535,7 +535,7 @@ O Keyboard Clock é gratuito e de código aberto (licença MIT): sem conta, sem 
 ### What's new in this version
 
 ```text
-Primeira versão na Microsoft Store. A Store mantém o Keyboard Clock atualizado, e o Windows o inicia quando você entra (dá para desativar em Configurações > Aplicativos > Inicialização). Já usava o Keyboard Clock? Suas configurações são mantidas.
+As horas e os minutos não se confundem mais: dois-pontos vêm depois das horas e antes dos minutos, e o teclado mostra 13: e depois :37.
 ```
 
 ### Product features

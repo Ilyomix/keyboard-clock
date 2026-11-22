@@ -33,7 +33,7 @@
 ---
 
 Geh vom PC weg, und **Keyboard Clock** macht deine Tastatur zu einer Uhr, die du noch vom anderen Ende des Raums
-ablesen kannst. Erst die Stunden, dann die Minuten, in zwei
+ablesen kannst. Erst die Stunden, dann die Minuten (13: dann :37), in zwei
 großen Ziffern, die Taste für Taste über F-Tasten, Zahlenreihe und Buchstaben gezeichnet sind, eine Ziffer auf jeder Tastaturhälfte. Die Sekunden füllen
 die neun Tasten über den Pfeiltasten. Berühre die Maus oder eine beliebige Taste, und deine gewohnte Beleuchtung ist
 sofort zurück.

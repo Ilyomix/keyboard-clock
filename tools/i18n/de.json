@@ -40,7 +40,7 @@
     "TKL und Full-Size"
   ],
   "how_h2": "Deine Tastatur wird zur Uhr",
-  "how_p": "Jede Ziffer ist von Hand auf echte Tasten gezeichnet. Die Tastatur zeigt zwei Ziffern auf einmal, eine auf jeder Hälfte: erst die Stunden, dann die Minuten. Die Sekunden füllen die neun Tasten über den Pfeiltasten.",
+  "how_p": "Jede Ziffer ist von Hand auf echte Tasten gezeichnet. Die Tastatur zeigt zwei Ziffern auf einmal, eine auf jeder Hälfte: erst die Stunden, dann die Minuten, mit einem Doppelpunkt zur Unterscheidung (13: dann :37). Die Sekunden füllen die neun Tasten über den Pfeiltasten.",
   "steps": [
     {
       "t": "Installieren",

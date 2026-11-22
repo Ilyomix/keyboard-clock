@@ -40,7 +40,7 @@
     "TKL and full size"
   ],
   "how_h2": "Your keyboard becomes a clock",
-  "how_p": "Each digit is drawn by hand on real keys. The keyboard shows two digits at a time, one on each half: first the hours, then the minutes. The seconds fill the nine keys above the arrows.",
+  "how_p": "Each digit is drawn by hand on real keys. The keyboard shows two digits at a time, one on each half: first the hours, then the minutes, with a colon to tell them apart (13: then :37). The seconds fill the nine keys above the arrows.",
   "steps": [
     {
       "t": "Install it",

@@ -33,7 +33,7 @@ import zlib
 from array import array
 from ctypes import wintypes
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 APP = "Keyboard Clock"
 APP_ID = "KeyboardClock"
 APP_AUMID = "Ilyomix.KeyboardClock"          # who sends our notifications, for Windows
@@ -730,6 +730,20 @@ def digit_spans(model, text, role, custom=None):
     return spans
 
 
+# The colon of HH:MM, on the number row and the home row: after the hours, a key away from the right digit, and
+# before the minutes, at the left edge. The keyboard reads 13: then :37, so the hours can't be taken for the
+# minutes. Keys by position, like the digits: "=" and "ù" after the hours on AZERTY, "²" and Caps Lock before the
+# minutes. The number is the character's, for per-digit colors: the colon comes after the hours' two digits and
+# before the minutes' first one.
+COLON = {"hours": (("=", "'"), 2), "minutes": (("`", "Caps"), -1)}
+
+
+def colon_spans(model, what):
+    """The colon that goes with `what` (the hours or the minutes; nothing else has one), as spans."""
+    keys, n = COLON.get(what, ((), 0))
+    return [(ROW_YS.index(y), x, x + w, what, n) for k, x, y, w, h in model.rects if k in keys and y in ROW_YS[:5]]
+
+
 class Renderer:
     """Turns settings and the time into one color per key. Pure: no device, no clock of its own."""
 
@@ -778,7 +792,9 @@ class Renderer:
             if u < dur:
                 break
             u -= dur
-        spans = digit_spans(self.model, self._digits(item["show"], wall), item["show"], self.custom_font)
+        what = item["show"]
+        spans = digit_spans(self.model, self._digits(what, wall), what, self.custom_font)
+        spans += colon_spans(self.model, what)
         T = self.tsecs
         if T <= 0:
             return spans, 1.0, None

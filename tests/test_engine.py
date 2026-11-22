@@ -81,7 +81,7 @@ class CustomFont(unittest.TestCase):
         r = kc.Renderer(m, s)
         lit = {k for k, c in r.frame(r.tsecs + 1, WALL.replace(hour=11)).items()
                if sum(c) and k not in kc.SECONDS_BLOCK}
-        self.assertEqual(lit, {"F2", "3", "E", "D", "X", "F6", "8", "U", "J", "M"})
+        self.assertEqual(lit, {"F2", "3", "E", "D", "X", "F6", "8", "U", "J", "M", "=", "'"})
 
     def test_classic_is_used_when_the_font_is_classic_or_a_digit_is_missing(self):
         m = kc.Model("tkl-iso")
@@ -126,11 +126,56 @@ class Rendering(unittest.TestCase):
         r = kc.Renderer(self.m, self.s)
         T, secs = r.tsecs, r.items[0]["secs"]
         lit = lambda t: {k for k, c in r.frame(t, WALL).items() if sum(c) > 0 and k not in kc.SECONDS_BLOCK}
-        hours = set(kc.classic_keys(self.m, "1", 0) + kc.classic_keys(self.m, "3", 1))
-        minutes = set(kc.classic_keys(self.m, "3", 0) + kc.classic_keys(self.m, "7", 1))
+        hours = set(kc.classic_keys(self.m, "1", 0) + kc.classic_keys(self.m, "3", 1)) | {"=", "'"}       # 13:
+        minutes = {"`", "Caps"} | set(kc.classic_keys(self.m, "3", 0) + kc.classic_keys(self.m, "7", 1))  # :37
         self.assertEqual(lit(T + 1), hours)
         self.assertEqual(lit(secs + 3 * T + 1), minutes)
         self.assertEqual(lit(0.0), set())                       # fully faded at the very start
+
+    def test_colon_after_the_hours_and_before_the_minutes_on_every_model(self):
+        hours_color, minutes_color = kc.hex_color("#ff5900"), kc.hex_color("#00ccff")     # neon, the default
+        for name in kc.MODELS:
+            r = kc.Renderer(kc.Model(name), self.s)
+            T, secs = r.tsecs, r.items[0]["secs"]
+            for wall in (WALL, WALL.replace(hour=0, minute=0), WALL.replace(hour=20, minute=48)):
+                hours, minutes = r.frame(T + 1, wall), r.frame(secs + 3 * T + 1, wall)
+                what = f"{name} {wall:%H:%M}"
+                for k in ("=", "'"):                                     # HH:
+                    self.assertEqual(hours[k], hours_color, f"{what} {k}")
+                    self.assertEqual(minutes[k], (0, 0, 0), f"{what} {k}")
+                for k in ("`", "Caps"):                                  # :MM
+                    self.assertEqual(minutes[k], minutes_color, f"{what} {k}")
+                    self.assertEqual(hours[k], (0, 0, 0), f"{what} {k}")
+
+    def test_colon_keys_stay_off_the_digits(self):
+        for name in kc.MODELS:
+            m = kc.Model(name)
+            digit_keys = {k for ch in "0123456789" for pos in (0, 1) for k in kc.classic_keys(m, ch, pos)}
+            for what, (keys, n) in kc.COLON.items():
+                spans = kc.colon_spans(m, what)
+                self.assertEqual(sorted(s[0] for s in spans), [1, 3], f"{name} {what}")   # number and home rows
+                self.assertFalse(set(keys) & digit_keys, f"{name} {what}")
+            areas = set(kc.digit_area(m, 0)) | set(kc.digit_area(m, 1))
+            self.assertFalse(set(kc.COLON["hours"][0]) & areas, name)          # no custom digit reaches it either
+
+    def test_only_the_hours_and_minutes_have_a_colon(self):
+        colon = {k for keys, n in kc.COLON.values() for k in keys}
+        for what in ("seconds", "day", "month"):
+            s = kc.clean_settings({"display": {"mode": "custom", "sequence": [{"show": what}], "seconds": "off"}})
+            r = kc.Renderer(self.m, s)
+            f = r.frame(r.tsecs + 1, WALL)
+            self.assertFalse({k for k in colon if sum(f[k])}, what)
+        timer = {"left": 125.0, "total": 600.0, "color": "#ff2e63", "done": None}
+        f = kc.Renderer(self.m, self.s).frame(1.0, WALL, extra={"timer": timer})
+        self.assertFalse({k for k in colon if sum(f[k])}, "timer")
+
+    def test_colon_keeps_the_digit_colors_alternating(self):
+        s = kc.clean_settings({"look": {"style": "digits", "digit_colors": ["#ff0000", "#0000ff"]},
+                               "display": {"transition": "none", "seconds": "off"}})
+        r = kc.Renderer(self.m, s)
+        hours, minutes = r.frame(1.0, WALL), r.frame(r.items[0]["secs"] + 1.0, WALL)
+        self.assertEqual(hours["="], (255, 0, 0))            # 1 3 : → red blue red
+        self.assertEqual(minutes["`"], (0, 0, 255))          # : 3 7 → blue red blue
 
     def test_fade_is_gradual(self):
         r = kc.Renderer(self.m, self.s)

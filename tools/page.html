@@ -284,7 +284,7 @@ var last={},prev=0;
 function two(n){return(n<10?"0":"")+n}
 function draw(force){var t=Date.now(),now=new Date(),cyc=5000,p=(t%cyc)/(cyc/2),role=p<1?"h":"m",u=p%1,a=still?1:Math.min(1,u/.12,(1-u)/.12);
  var txt=role==="h"?two(now.getHours()):two(now.getMinutes()),lit={};
- D.font[txt[0]][0].concat(D.font[txt[1]][1]).forEach(function(k){lit[k]=[color(k,role,t),a]});
+ D.font[txt[0]][0].concat(D.font[txt[1]][1],D.colon[role]).forEach(function(k){lit[k]=[color(k,role,t),a]});
  var pr=(now.getSeconds()+now.getMilliseconds()/1000)/(60/D.seconds.length);
  D.seconds.forEach(function(k,i){var l=Math.min(1,Math.max(0,pr-i));if(l>0)lit[k]=[D.sec,l]});
  for(var k in el){var v=lit[k],c=v?mix(D.off,v[0],v[1]):null,s=c?"rgb("+Math.round(c[0])+","+Math.round(c[1])+","+Math.round(c[2])+")":"";

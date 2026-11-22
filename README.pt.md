@@ -33,7 +33,7 @@
 ---
 
 Quando você sai de perto do PC, o **Keyboard Clock** transforma o seu teclado em um relógio que dá para ler do outro
-lado do quarto. Primeiro as horas, depois os minutos, em dois dígitos grandes
+lado do quarto. Primeiro as horas, depois os minutos (13: depois :37), em dois dígitos grandes
 desenhados tecla por tecla sobre as teclas de função, a fileira de números e as letras, um dígito em cada metade do teclado. Os segundos preenchem as nove
 teclas acima das setas. Toque no mouse ou em qualquer tecla e a sua iluminação de sempre volta na hora.
 

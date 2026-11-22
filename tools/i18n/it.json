@@ -40,7 +40,7 @@
     "TKL e full size"
   ],
   "how_h2": "La tua tastiera diventa un orologio",
-  "how_p": "Ogni cifra è disegnata a mano su tasti veri. La tastiera mostra due cifre alla volta, una per metà: prima le ore, poi i minuti. I secondi riempiono i nove tasti sopra le frecce.",
+  "how_p": "Ogni cifra è disegnata a mano su tasti veri. La tastiera mostra due cifre alla volta, una per metà: prima le ore, poi i minuti, con i due punti per distinguerli (13: poi :37). I secondi riempiono i nove tasti sopra le frecce.",
   "steps": [
     {
       "t": "Installa",
